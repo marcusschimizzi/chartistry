@@ -12,4 +12,5 @@ export * from './scales';
 export * from './data';
 export * from './marks';
 export * from './interaction';
+export * from './transition';
 export * from './chart';

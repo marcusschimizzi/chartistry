@@ -16,12 +16,12 @@ the chart logic.
 
 ## Packages
 
-| Package                       | Responsibility                                                                                                         |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `@chartistry/core`            | Framework-agnostic core: scales, scene graph, marks, chart layout, and the `Renderer` interface. No DOM, no framework. |
-| `@chartistry/renderer-svg`    | Paints a scene graph into SVG DOM, retained and keyed — diffs between frames and animates the difference.              |
-| `@chartistry/renderer-canvas` | Paints the same scene graph onto a Canvas 2D context. For larger datasets.                                             |
-| `@chartistry/react`           | Composable React components (`<Chart>`, `<LineSeries>`, `<XAxis>`, …) over the core.                                   |
+| Package                       | Responsibility                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `@chartistry/core`            | Framework-agnostic core: scales, scene graph, marks, layout, the `Renderer` interface, and the transition animator. No DOM, no framework. |
+| `@chartistry/renderer-svg`    | Paints interpolated scenes into SVG DOM, reusing elements by `key`.                                                                       |
+| `@chartistry/renderer-canvas` | Repaints interpolated scenes onto a Canvas 2D context. For larger datasets.                                                               |
+| `@chartistry/react`           | Composable React components (`<Chart>`, `<LineSeries>`, `<XAxis>`, …) over the core.                                                      |
 
 ## Quick look
 
@@ -132,17 +132,20 @@ const active = useChartPointer();
 
 ### Transitions
 
-The SVG renderer is retained: it matches scene nodes by `key` across frames,
-reuses the DOM, and tweens the difference — so toggling a series or changing
-data animates (bars regrow, axes reflow) instead of snapping. Tune or disable it:
+A backend-agnostic **animator** in the core diffs successive scenes by `key`,
+classifies nodes as enter / update / exit, and emits interpolated scenes each
+frame. Renderers just paint what they're handed — SVG patches the DOM, Canvas
+repaints — so **both backends animate identically** from one scene spec. Toggling
+a series or changing data eases (bars regrow, axes reflow) instead of snapping.
 
 ```ts
 createSvgRenderer({ transition: { duration: 320 } }); // the default
-createSvgRenderer({ transition: false }); // snap, no animation
+createCanvasRenderer({ transition: false }); // snap, no animation
 ```
 
 Pointer-driven marks (crosshair, highlight) carry `animate: false` so they track
-the cursor instantly. The Canvas renderer repaints each frame and doesn't tween.
+the cursor instantly. Because the animator is pure scene-to-scene, it's unit
+tested without a DOM.
 
 ## Development
 
@@ -170,14 +173,14 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
 - ✅ Pluggable renderer interface with SVG and Canvas backends
-- ✅ Retained SVG renderer: keyed diffing + enter/update/exit transitions
+- ✅ Backend-agnostic transition animator: enter/update/exit, shared by both renderers
 - ✅ React adapter with composable components
-- ✅ Playground proving every chart type — and interaction — across both renderers
+- ✅ Playground proving every chart type, interaction, and transitions across both renderers
 
 ### Roadmap ideas
 
 - More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
-- Keyed scene diffing in the Canvas renderer (so it tweens too)
+- Path interpolation for polylines whose point count changes (resampling)
 - Accessibility (ARIA, keyboard) baked into the scene model
 - Additional adapters (Vue, Svelte, Web Components)
 

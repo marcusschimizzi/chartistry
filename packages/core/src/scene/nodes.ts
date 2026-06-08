@@ -50,6 +50,8 @@ export interface GroupNode extends NodeBase {
   type: 'group';
   x?: number;
   y?: number;
+  /** Group-wide opacity, multiplied into descendants. Used for subtree fades. */
+  opacity?: number;
   children: SceneNode[];
 }
 
