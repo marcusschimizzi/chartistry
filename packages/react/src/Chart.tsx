@@ -24,6 +24,7 @@ import {
   withinPlot,
   type ContinuousScale,
   type MarginInput,
+  type Point,
   type Renderer,
   type RendererHandle,
   type Scale,
@@ -286,6 +287,19 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     setActiveIndex(next);
   }, []);
 
+  // Marks that hit-test against raw pointer coordinates (e.g. <Pie>) subscribe
+  // here. Kept imperative so a pointer move only re-renders marks whose own
+  // resolved state actually changes, not the whole chart on every move.
+  const pointerListenersRef = useRef(new Set<(point: Point | null) => void>());
+  const notifyPointer = useCallback((point: Point | null) => {
+    for (const listener of pointerListenersRef.current) listener(point);
+  }, []);
+  const subscribePointer = useCallback((listener: (point: Point | null) => void) => {
+    const listeners = pointerListenersRef.current;
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }, []);
+
   const handlePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       const host = hostRef.current;
@@ -295,17 +309,22 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       const localY = event.clientY - rect.top - plot.y;
       if (!withinPlot(localX, localY, plot.width, plot.height)) {
         setActive(null);
+        notifyPointer(null);
         return;
       }
+      notifyPointer({ x: localX, y: localY });
       // Hit-test along the category axis (x for vertical, y for horizontal).
       const along = horizontal ? localY : localX;
       const index = nearestIndex(along, positionsRef.current);
       setActive(index < 0 ? null : index);
     },
-    [plot.x, plot.y, plot.width, plot.height, horizontal, setActive],
+    [plot.x, plot.y, plot.width, plot.height, horizontal, setActive, notifyPointer],
   );
 
-  const handlePointerLeave = useCallback(() => setActive(null), [setActive]);
+  const handlePointerLeave = useCallback(() => {
+    setActive(null);
+    notifyPointer(null);
+  }, [setActive, notifyPointer]);
 
   // --- Keyboard navigation + screen-reader announcements. ------------------
   const describeId = useId();
@@ -447,6 +466,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       toggleSeries,
       legendSlot,
       active,
+      subscribePointer,
       store,
       requestPaint,
     }),
@@ -466,6 +486,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       toggleSeries,
       legendSlot,
       active,
+      subscribePointer,
       store,
       requestPaint,
     ],
