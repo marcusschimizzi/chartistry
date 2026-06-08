@@ -145,6 +145,33 @@ import {
 const active = useChartPointer();
 ```
 
+### Accessibility
+
+`<Chart>` is accessible by default. Give it a `title` (and ideally a
+`description`) and it renders as a `role="figure"`, exposes a visually hidden
+data table mirroring every value, and makes the plot keyboard-navigable: arrow
+keys / Home / End move a cursor through the data, lighting up the same crosshair,
+highlight, and tooltip a mouse would, while an `aria-live` region announces each
+datum (x values are spoken via the scale's own formatter, so a time axis reads
+dates). Pass `accessible={false}` to opt out.
+
+```tsx
+<Chart
+  width={640}
+  height={360}
+  data={data}
+  x={(d) => d.month}
+  y={(d) => d.sales}
+  title="Monthly sales"
+  description="Sales by month for 2024."
+  xLabel="Month"
+>
+  <LineSeries />
+  <Crosshair />
+  <Tooltip />
+</Chart>
+```
+
 ### Transitions
 
 A backend-agnostic **animator** in the core diffs successive scenes by `key`,
@@ -192,6 +219,7 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Multi-series support with a reusable `stack()` data transform
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
+- ✅ Accessibility: figure roles, hidden data table, keyboard nav + aria-live
 - ✅ Pluggable renderer interface with SVG and Canvas backends
 - ✅ Backend-agnostic transition animator: enter/update/exit, shared by both renderers
 - ✅ Polyline/area path morphing (resampling) when a line's point count changes
@@ -200,8 +228,8 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 
 ### Roadmap ideas
 
-- More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
-- Accessibility (ARIA, keyboard) baked into the scene model
+- More scales (log, symlog) and marks (horizontal bars, areas-as-stacks, pies)
+- Series-level keyboard navigation (up/down to switch series)
 - Additional adapters (Vue, Svelte, Web Components)
 
 ## License

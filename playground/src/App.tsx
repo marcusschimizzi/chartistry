@@ -128,6 +128,8 @@ function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) 
         y={(d) => d.y}
         renderer={renderer}
         margin={MARGIN}
+        title="Area chart"
+        description="A single metric across evenly spaced samples."
       >
         <Grid axis="y" />
         <YAxis />
@@ -152,6 +154,9 @@ function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) 
         xScaleType="time"
         renderer={renderer}
         margin={MARGIN}
+        title="Time series"
+        description="A daily value over a date range."
+        xLabel="Date"
       >
         <Grid axis="y" />
         <YAxis />
@@ -173,11 +178,13 @@ function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) 
     series: categorySeries,
     renderer,
     margin: MARGIN,
+    xLabel: 'Quarter',
+    description: 'Quarterly figures across desktop, mobile, and tablet.',
   };
 
   if (chartKind === 'grouped') {
     return (
-      <Chart {...shared} bandPadding={0.25}>
+      <Chart {...shared} bandPadding={0.25} title="Grouped bars">
         <Grid axis="y" />
         <YAxis />
         <XAxis />
@@ -191,7 +198,7 @@ function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) 
 
   if (chartKind === 'stacked') {
     return (
-      <Chart {...shared} stackY bandPadding={0.35}>
+      <Chart {...shared} stackY bandPadding={0.35} title="Stacked bars">
         <Grid axis="y" />
         <YAxis />
         <XAxis />
@@ -205,7 +212,7 @@ function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) 
 
   // multiline
   return (
-    <Chart {...shared} bandPadding={0}>
+    <Chart {...shared} bandPadding={0} title="Multi-line">
       <Grid axis="y" />
       <YAxis />
       <XAxis />

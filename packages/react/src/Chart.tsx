@@ -1,10 +1,12 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
@@ -37,6 +39,7 @@ import {
   type XValue,
 } from './context';
 import { MarkStore } from './mark-store';
+import { ChartDataTable, describePoint, srOnly } from './a11y';
 
 export interface ChartProps<D> {
   width: number;
@@ -65,6 +68,14 @@ export interface ChartProps<D> {
   colors?: readonly string[];
   /** Track the pointer to drive <Tooltip>/<Crosshair>/<Highlight>. Default true. */
   interactive?: boolean;
+  /** Accessible name for the chart (figure label). Strongly recommended. */
+  title?: string;
+  /** Longer description, announced as the figure's description. */
+  description?: string;
+  /** Header for the x column in the hidden data table. Defaults to "x". */
+  xLabel?: string;
+  /** Emit ARIA roles, a hidden data table, and keyboard nav. Default true. */
+  accessible?: boolean;
   /** The pluggable rendering backend. Defaults to the SVG renderer. */
   renderer?: Renderer;
   children?: ReactNode;
@@ -97,6 +108,10 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     bandPadding = 0.2,
     colors,
     interactive = true,
+    title,
+    description,
+    xLabel = 'x',
+    accessible = true,
     renderer = defaultRenderer,
     children,
   } = props;
@@ -274,6 +289,69 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
 
   const handlePointerLeave = useCallback(() => setActive(null), [setActive]);
 
+  // --- Keyboard navigation + screen-reader announcements. ------------------
+  const describeId = useId();
+  const [liveText, setLiveText] = useState('');
+  const formatX = useMemo(
+    () =>
+      (xScale.tickFormat ? xScale.tickFormat() : (v: XValue) => String(v)) as (v: XValue) => string,
+    [xScale],
+  );
+
+  const announce = useCallback(
+    (index: number | null) => {
+      if (index === null) return setLiveText('');
+      setLiveText(
+        describePoint(
+          data as readonly unknown[],
+          index,
+          x as (d: unknown, i: number) => XValue,
+          formatX,
+          interactiveSeries,
+        ),
+      );
+    },
+    [data, x, formatX, interactiveSeries],
+  );
+
+  const handleKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      const n = data.length;
+      if (n === 0) return;
+      const current = activeIndexRef.current;
+      let next: number | null = current;
+      switch (event.key) {
+        case 'ArrowRight':
+          next = current === null ? 0 : Math.min(n - 1, current + 1);
+          break;
+        case 'ArrowLeft':
+          next = current === null ? n - 1 : Math.max(0, current - 1);
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = n - 1;
+          break;
+        case 'Escape':
+          setActive(null);
+          announce(null);
+          return;
+        default:
+          return;
+      }
+      event.preventDefault();
+      setActive(next);
+      announce(next);
+    },
+    [data.length, setActive, announce],
+  );
+
+  const handleBlur = useCallback(() => {
+    setActive(null);
+    announce(null);
+  }, [setActive, announce]);
+
   const active = useMemo<ActivePoint | null>(() => {
     if (activeIndex === null || activeIndex < 0 || activeIndex >= data.length) return null;
     const datum = data[activeIndex];
@@ -365,18 +443,55 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     ],
   );
 
+  const describable = accessible && description !== undefined;
+
   return (
-    <div style={{ display: 'inline-flex', flexDirection: 'column' }}>
+    <div
+      style={{ display: 'inline-flex', flexDirection: 'column' }}
+      role={accessible ? 'figure' : undefined}
+      aria-label={accessible ? (title ?? 'Chart') : undefined}
+      aria-describedby={describable ? describeId : undefined}
+    >
+      {describable && (
+        <p id={describeId} style={srOnly}>
+          {description} Use the arrow keys to move through data points.
+        </p>
+      )}
       <div
         ref={hostRef}
-        style={{ position: 'relative', width, height, touchAction: 'none' }}
+        style={{ position: 'relative', width, height, touchAction: 'none', outline: 'none' }}
+        // role="application" lets arrow keys reach our handler even in a screen
+        // reader's browse mode; the hidden table below it stays browseable.
+        role={accessible ? 'application' : undefined}
+        aria-roledescription={accessible ? 'interactive chart' : undefined}
+        aria-label={accessible ? (title ?? 'Chart') : undefined}
+        tabIndex={accessible ? 0 : undefined}
         onPointerMove={interactive ? handlePointerMove : undefined}
         onPointerLeave={interactive ? handlePointerLeave : undefined}
+        onKeyDown={accessible ? handleKeyDown : undefined}
+        onBlur={accessible ? handleBlur : undefined}
       >
         {/* The renderer owns this surface; React owns the overlay layer above it. */}
         <div ref={surfaceRef} style={{ position: 'absolute', inset: 0 }} />
         <ChartContext.Provider value={contextValue}>{children}</ChartContext.Provider>
       </div>
+
+      {accessible && (
+        <>
+          <div aria-live="polite" role="status" style={srOnly}>
+            {liveText}
+          </div>
+          <ChartDataTable
+            caption={title ?? 'Chart data'}
+            xLabel={xLabel}
+            data={data as readonly unknown[]}
+            xAccessor={x as (d: unknown, i: number) => XValue}
+            formatX={formatX}
+            series={interactiveSeries}
+          />
+        </>
+      )}
+
       {/* <Legend> portals here, so it sits outside the drawing/hit-test area. */}
       <div ref={setLegendSlot} />
     </div>
