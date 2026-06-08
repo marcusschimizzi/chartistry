@@ -4,3 +4,4 @@ export * from './bar';
 export * from './bar-series';
 export * from './axis';
 export * from './grid';
+export * from './crosshair';

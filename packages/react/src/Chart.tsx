@@ -1,12 +1,24 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import {
   bandScale,
+  categoricalColors,
   colorScale as createColorScale,
   createChart,
   extent,
   linearScale,
+  nearestIndex,
   seriesExtent,
   stackExtent,
+  withinPlot,
   type MarginInput,
   type Renderer,
   type RendererHandle,
@@ -16,6 +28,7 @@ import {
 import { createSvgRenderer } from '@chartistry/renderer-svg';
 import {
   ChartContext,
+  type ActivePoint,
   type ChartContextValue,
   type ResolvedSeries,
   type SeriesSpec,
@@ -48,6 +61,8 @@ export interface ChartProps<D> {
   bandPadding?: number;
   /** Palette for auto-colored series. */
   colors?: readonly string[];
+  /** Track the pointer to drive <Tooltip>/<Crosshair>/<Highlight>. Default true. */
+  interactive?: boolean;
   /** The pluggable rendering backend. Defaults to the SVG renderer. */
   renderer?: Renderer;
   children?: ReactNode;
@@ -79,11 +94,13 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     niceY = true,
     bandPadding = 0.2,
     colors,
+    interactive = true,
     renderer = defaultRenderer,
     children,
   } = props;
 
   const hostRef = useRef<HTMLDivElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<RendererHandle | null>(null);
   const paintQueuedRef = useRef(false);
 
@@ -174,6 +191,72 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     }));
   }, [series, colors]);
 
+  // The series to interrogate on hover: the real ones, or an implicit single
+  // series wrapping the chart-level y accessor so single-series charts hover too.
+  const interactiveSeries = useMemo<ResolvedSeries[]>(() => {
+    if (resolvedSeries.length > 0) return resolvedSeries;
+    return [
+      {
+        key: 'value',
+        y: (y ?? noY) as (d: unknown, i: number) => number,
+        color: categoricalColors[0]!,
+      },
+    ];
+  }, [resolvedSeries, y]);
+
+  // Pixel x of each datum (band center for band scales) — the hit-test targets.
+  const positions = useMemo<number[]>(
+    () => data.map((d, i) => xScale(x(d, i)) + xScale.bandwidth() / 2),
+    [data, xScale, x],
+  );
+
+  // --- Pointer tracking. activeIndex is the datum under the cursor. ---------
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const activeIndexRef = useRef<number | null>(null);
+  const positionsRef = useRef(positions);
+  positionsRef.current = positions;
+
+  const setActive = useCallback((next: number | null) => {
+    if (next === activeIndexRef.current) return;
+    activeIndexRef.current = next;
+    setActiveIndex(next);
+  }, []);
+
+  const handlePointerMove = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const host = hostRef.current;
+      if (!host) return;
+      const rect = host.getBoundingClientRect();
+      const localX = event.clientX - rect.left - plot.x;
+      const localY = event.clientY - rect.top - plot.y;
+      if (!withinPlot(localX, localY, plot.width, plot.height)) {
+        setActive(null);
+        return;
+      }
+      const index = nearestIndex(localX, positionsRef.current);
+      setActive(index < 0 ? null : index);
+    },
+    [plot.x, plot.y, plot.width, plot.height, setActive],
+  );
+
+  const handlePointerLeave = useCallback(() => setActive(null), [setActive]);
+
+  const active = useMemo<ActivePoint | null>(() => {
+    if (activeIndex === null || activeIndex < 0 || activeIndex >= data.length) return null;
+    const datum = data[activeIndex];
+    const points = interactiveSeries.map((s) => {
+      const value = s.y(datum, activeIndex);
+      return { key: s.key, color: s.color, value, y: yScale(value) };
+    });
+    return {
+      index: activeIndex,
+      datum,
+      xValue: x(data[activeIndex] as D, activeIndex),
+      x: positions[activeIndex] ?? 0,
+      points,
+    };
+  }, [activeIndex, data, interactiveSeries, positions, yScale, x]);
+
   // Paint the current frame from the store, coalescing bursts into one repaint.
   const paint = useCallback(() => {
     paintQueuedRef.current = false;
@@ -191,9 +274,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   // Mount / swap the renderer. Re-runs when the renderer instance changes,
   // which is exactly how you flip backends at runtime.
   useLayoutEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-    const handle = renderer.mount(host, { width, height });
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    const handle = renderer.mount(surface, { width, height });
     handleRef.current = handle;
     requestPaint();
     return () => {
@@ -224,14 +307,22 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       xAccessor: x as (d: unknown, i: number) => XValue,
       yAccessor: (y ?? noY) as (d: unknown, i: number) => number,
       series: resolvedSeries,
+      active,
       store,
       requestPaint,
     }),
-    [size, plot, data, xScale, yScale, x, y, resolvedSeries, store, requestPaint],
+    [size, plot, data, xScale, yScale, x, y, resolvedSeries, active, store, requestPaint],
   );
 
   return (
-    <div ref={hostRef} style={{ position: 'relative', width, height }}>
+    <div
+      ref={hostRef}
+      style={{ position: 'relative', width, height, touchAction: 'none' }}
+      onPointerMove={interactive ? handlePointerMove : undefined}
+      onPointerLeave={interactive ? handlePointerLeave : undefined}
+    >
+      {/* The renderer owns this surface; React owns the overlay layer below it. */}
+      <div ref={surfaceRef} style={{ position: 'absolute', inset: 0 }} />
       <ChartContext.Provider value={contextValue}>{children}</ChartContext.Provider>
     </div>
   );

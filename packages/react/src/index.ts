@@ -22,10 +22,21 @@ export {
 } from './bars';
 export { XAxis, YAxis, type AxisProps, Grid, type GridProps } from './axes';
 export {
+  Crosshair,
+  type CrosshairProps,
+  Highlight,
+  type HighlightProps,
+  Tooltip,
+  type TooltipProps,
+  useChartPointer,
+} from './interaction';
+export {
   useChartContext,
   type ChartContextValue,
   type SeriesSpec,
   type ResolvedSeries,
+  type ActivePoint,
+  type ActiveSeriesPoint,
   type XValue,
 } from './context';
 export { useMark } from './use-mark';

@@ -20,6 +20,26 @@ export interface ResolvedSeries {
   color: string;
 }
 
+/** One series' value at the active datum, with its plot-local y in pixels. */
+export interface ActiveSeriesPoint {
+  key: string;
+  color: string;
+  value: number;
+  /** Plot-local y position, in pixels. */
+  y: number;
+}
+
+/** The datum currently under the pointer, resolved across every series. */
+export interface ActivePoint {
+  index: number;
+  datum: unknown;
+  /** The datum's x value (category or number). */
+  xValue: XValue;
+  /** Plot-local x position, in pixels (band center for band scales). */
+  x: number;
+  points: ActiveSeriesPoint[];
+}
+
 /** Everything child marks need, shared down the tree by {@link Chart}. */
 export interface ChartContextValue {
   size: Size;
@@ -34,6 +54,8 @@ export interface ChartContextValue {
   yAccessor: (datum: unknown, index: number) => number;
   /** Resolved multi-series, empty unless `series` was passed to <Chart>. */
   series: readonly ResolvedSeries[];
+  /** The datum currently under the pointer, or null when not hovering. */
+  active: ActivePoint | null;
   store: MarkStore;
   /** Ask the Chart to repaint the active renderer on the next microtask. */
   requestPaint: () => void;

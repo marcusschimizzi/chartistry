@@ -5,11 +5,14 @@ import { createCanvasRenderer } from '@chartistry/renderer-canvas';
 import {
   BarGroup,
   Chart,
+  Crosshair,
   Grid,
+  Highlight,
   Lines,
   LineSeries,
   Points,
   StackedBars,
+  Tooltip,
   XAxis,
   YAxis,
 } from '@chartistry/react';
@@ -124,6 +127,9 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
         <XAxis />
         <LineSeries stroke="#6366f1" area />
         <Points radius={2.5} fill="#6366f1" />
+        <Crosshair horizontal />
+        <Highlight />
+        <Tooltip />
       </Chart>
     );
   }
@@ -146,6 +152,8 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
         <YAxis />
         <XAxis />
         <BarGroup radius={3} groupPadding={0.15} />
+        <Crosshair />
+        <Tooltip />
       </Chart>
     );
   }
@@ -157,6 +165,8 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
         <YAxis />
         <XAxis />
         <StackedBars radius={3} />
+        <Crosshair />
+        <Tooltip />
       </Chart>
     );
   }
@@ -168,6 +178,9 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
       <YAxis />
       <XAxis />
       <Lines strokeWidth={2.5} />
+      <Crosshair horizontal />
+      <Highlight />
+      <Tooltip />
     </Chart>
   );
 }

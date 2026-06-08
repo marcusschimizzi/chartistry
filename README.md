@@ -96,6 +96,35 @@ const series = [
 </Chart>;
 ```
 
+### Interaction
+
+Add `<Tooltip>`, `<Crosshair>`, and `<Highlight>` as children. They share a
+single pointer model resolved in the core via renderer-agnostic hit-testing, so
+they behave identically on SVG and Canvas. The crosshair and focus rings are
+painted into the scene graph; the tooltip is an HTML overlay you can fully
+restyle with a render prop.
+
+```tsx
+import {
+  Chart,
+  LineSeries,
+  Crosshair,
+  Highlight,
+  Tooltip,
+  useChartPointer,
+} from '@chartistry/react';
+
+<Chart width={640} height={360} data={data} x={(d) => d.x} y={(d) => d.y}>
+  <LineSeries area />
+  <Crosshair horizontal />
+  <Highlight />
+  <Tooltip /> {/* or <Tooltip>{(active) => <MyPanel point={active} />}</Tooltip> */}
+</Chart>;
+
+// ...or read the active datum yourself:
+const active = useChartPointer();
+```
+
 ## Development
 
 This is a [pnpm](https://pnpm.io) workspace.
@@ -119,15 +148,16 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Scales: linear, band, and ordinal/color
 - ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars
 - ✅ Multi-series support with a reusable `stack()` data transform
+- ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
 - ✅ Pluggable renderer interface with SVG and Canvas backends
 - ✅ React adapter with composable components
-- ✅ Playground proving every chart type across both renderers
+- ✅ Playground proving every chart type — and interaction — across both renderers
 
 ### Roadmap ideas
 
 - More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
 - Keyed scene diffing in the SVG renderer; transitions
-- Interaction layer (tooltips, hover, crosshair) over the scene graph
+- Pull the legend into the library; click-to-toggle series
 - Accessibility (ARIA, keyboard) baked into the scene model
 - Additional adapters (Vue, Svelte, Web Components)
 
