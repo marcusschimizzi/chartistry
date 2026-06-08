@@ -21,6 +21,7 @@ export {
   type StackedBarsProps,
 } from './bars';
 export { XAxis, YAxis, type AxisProps, Grid, type GridProps } from './axes';
+export { Legend, type LegendProps } from './legend';
 export {
   Crosshair,
   type CrosshairProps,
@@ -35,6 +36,7 @@ export {
   type ChartContextValue,
   type SeriesSpec,
   type ResolvedSeries,
+  type LegendSeries,
   type ActivePoint,
   type ActiveSeriesPoint,
   type XValue,

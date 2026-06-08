@@ -80,7 +80,7 @@ Declare a `series` array once, then drop in whichever multi-series mark you want
 categorical palette automatically.
 
 ```tsx
-import { Chart, BarGroup, StackedBars, Lines, XAxis, YAxis, Grid } from '@chartistry/react';
+import { Chart, BarGroup, StackedBars, Lines, Legend, XAxis, YAxis, Grid } from '@chartistry/react';
 
 const series = [
   { key: 'desktop', y: (d) => d.desktop },
@@ -93,8 +93,13 @@ const series = [
   <YAxis />
   <XAxis />
   <BarGroup radius={3} /> {/* or <StackedBars /> (add `stackY` to <Chart>), or <Lines /> */}
+  <Legend /> {/* click an item to hide a series; scales and the tooltip follow */}
 </Chart>;
 ```
+
+Add `<Legend>`, and clicking an item toggles that series off — Chartistry drops
+it from the scales, marks, and tooltip and rescales, while colors stay put. The
+legend renders beneath the chart and reads `series` automatically.
 
 ### Interaction
 
@@ -149,6 +154,7 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars
 - ✅ Multi-series support with a reusable `stack()` data transform
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
+- ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
 - ✅ Pluggable renderer interface with SVG and Canvas backends
 - ✅ React adapter with composable components
 - ✅ Playground proving every chart type — and interaction — across both renderers
@@ -157,7 +163,6 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 
 - More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
 - Keyed scene diffing in the SVG renderer; transitions
-- Pull the legend into the library; click-to-toggle series
 - Accessibility (ARIA, keyboard) baked into the scene model
 - Additional adapters (Vue, Svelte, Web Components)
 

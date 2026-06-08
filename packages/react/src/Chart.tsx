@@ -30,6 +30,7 @@ import {
   ChartContext,
   type ActivePoint,
   type ChartContextValue,
+  type LegendSeries,
   type ResolvedSeries,
   type SeriesSpec,
   type XValue,
@@ -104,6 +105,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   const handleRef = useRef<RendererHandle | null>(null);
   const paintQueuedRef = useRef(false);
 
+  // The <Legend> portals into this slot, rendered beneath the chart surface.
+  const [legendSlot, setLegendSlot] = useState<HTMLDivElement | null>(null);
+
   const storeRef = useRef<MarkStore | null>(null);
   storeRef.current ??= new MarkStore();
   const store = storeRef.current;
@@ -156,29 +160,20 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     }) as unknown as Scale<XValue>;
   }, [xScaleType, categories, plot.width, bandPadding, linX0, linX1]);
 
-  // --- Vertical scale: from explicit domain, series, or single accessor. ----
-  const stackSeries = useMemo<StackSeries<D>[]>(
-    () => (series ? series.map((s) => ({ key: s.key, value: s.y })) : []),
-    [series],
-  );
+  // --- Series resolution + legend visibility. ------------------------------
+  const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleSeries = useCallback((key: string) => {
+    setHiddenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
 
-  const [y0, y1] = useMemo<readonly [number, number]>(() => {
-    if (yDomain) return yDomain;
-    if (series && series.length > 0) {
-      return stackY ? stackExtent(data, stackSeries) : seriesExtent(data, stackSeries);
-    }
-    const accessor = y ?? noY;
-    return extent(data.map((d, i) => accessor(d, i)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, series, stackSeries, stackY, y, JSON.stringify(yDomain ?? null)]);
-
-  const yScale = useMemo(
-    () => linearScale({ domain: [y0, y1], range: [plot.height, 0], nice: niceY }),
-    [y0, y1, plot.height, niceY],
-  );
-
-  // --- Resolve per-series colors once, from explicit color or palette. ------
-  const resolvedSeries = useMemo<ResolvedSeries[]>(() => {
+  // Colors are assigned over every key, so a series keeps its color whether or
+  // not its peers are hidden — only the visible subset feeds scales and marks.
+  const allSeries = useMemo<LegendSeries[]>(() => {
     if (!series) return [];
     const palette = createColorScale(
       series.map((s) => s.key),
@@ -188,13 +183,42 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       key: s.key,
       y: s.y as (d: unknown, i: number) => number,
       color: s.color ?? palette(s.key),
+      hidden: hiddenKeys.has(s.key),
     }));
-  }, [series, colors]);
+  }, [series, colors, hiddenKeys]);
 
-  // The series to interrogate on hover: the real ones, or an implicit single
+  const visibleSeries = useMemo<ResolvedSeries[]>(
+    () => allSeries.filter((s) => !s.hidden),
+    [allSeries],
+  );
+
+  // --- Vertical scale: from explicit domain, visible series, or accessor. ---
+  const stackSeries = useMemo<StackSeries<unknown>[]>(
+    () => visibleSeries.map((s) => ({ key: s.key, value: s.y })),
+    [visibleSeries],
+  );
+
+  const [y0, y1] = useMemo<readonly [number, number]>(() => {
+    if (yDomain) return yDomain;
+    const rows = data as readonly unknown[];
+    if (visibleSeries.length > 0) {
+      return stackY ? stackExtent(rows, stackSeries) : seriesExtent(rows, stackSeries);
+    }
+    const accessor = y ?? noY;
+    return extent(data.map((d, i) => accessor(d, i)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, visibleSeries, stackSeries, stackY, y, JSON.stringify(yDomain ?? null)]);
+
+  const yScale = useMemo(
+    () => linearScale({ domain: [y0, y1], range: [plot.height, 0], nice: niceY }),
+    [y0, y1, plot.height, niceY],
+  );
+
+  // The series to interrogate on hover: the visible ones, or an implicit single
   // series wrapping the chart-level y accessor so single-series charts hover too.
   const interactiveSeries = useMemo<ResolvedSeries[]>(() => {
-    if (resolvedSeries.length > 0) return resolvedSeries;
+    if (visibleSeries.length > 0) return visibleSeries;
+    if (allSeries.length > 0) return []; // multi-series, but all toggled off
     return [
       {
         key: 'value',
@@ -202,7 +226,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         color: categoricalColors[0]!,
       },
     ];
-  }, [resolvedSeries, y]);
+  }, [visibleSeries, allSeries, y]);
 
   // Pixel x of each datum (band center for band scales) — the hit-test targets.
   const positions = useMemo<number[]>(
@@ -306,24 +330,46 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       yScale,
       xAccessor: x as (d: unknown, i: number) => XValue,
       yAccessor: (y ?? noY) as (d: unknown, i: number) => number,
-      series: resolvedSeries,
+      series: visibleSeries,
+      allSeries,
+      toggleSeries,
+      legendSlot,
       active,
       store,
       requestPaint,
     }),
-    [size, plot, data, xScale, yScale, x, y, resolvedSeries, active, store, requestPaint],
+    [
+      size,
+      plot,
+      data,
+      xScale,
+      yScale,
+      x,
+      y,
+      visibleSeries,
+      allSeries,
+      toggleSeries,
+      legendSlot,
+      active,
+      store,
+      requestPaint,
+    ],
   );
 
   return (
-    <div
-      ref={hostRef}
-      style={{ position: 'relative', width, height, touchAction: 'none' }}
-      onPointerMove={interactive ? handlePointerMove : undefined}
-      onPointerLeave={interactive ? handlePointerLeave : undefined}
-    >
-      {/* The renderer owns this surface; React owns the overlay layer below it. */}
-      <div ref={surfaceRef} style={{ position: 'absolute', inset: 0 }} />
-      <ChartContext.Provider value={contextValue}>{children}</ChartContext.Provider>
+    <div style={{ display: 'inline-flex', flexDirection: 'column' }}>
+      <div
+        ref={hostRef}
+        style={{ position: 'relative', width, height, touchAction: 'none' }}
+        onPointerMove={interactive ? handlePointerMove : undefined}
+        onPointerLeave={interactive ? handlePointerLeave : undefined}
+      >
+        {/* The renderer owns this surface; React owns the overlay layer above it. */}
+        <div ref={surfaceRef} style={{ position: 'absolute', inset: 0 }} />
+        <ChartContext.Provider value={contextValue}>{children}</ChartContext.Provider>
+      </div>
+      {/* <Legend> portals here, so it sits outside the drawing/hit-test area. */}
+      <div ref={setLegendSlot} />
     </div>
   );
 }

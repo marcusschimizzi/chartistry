@@ -8,5 +8,11 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   target: 'es2021',
-  external: ['react', 'react/jsx-runtime', '@chartistry/core', '@chartistry/renderer-svg'],
+  external: [
+    'react',
+    'react-dom',
+    'react/jsx-runtime',
+    '@chartistry/core',
+    '@chartistry/renderer-svg',
+  ],
 });

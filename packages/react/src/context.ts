@@ -20,6 +20,11 @@ export interface ResolvedSeries {
   color: string;
 }
 
+/** A resolved series plus its current legend visibility. */
+export interface LegendSeries extends ResolvedSeries {
+  hidden: boolean;
+}
+
 /** One series' value at the active datum, with its plot-local y in pixels. */
 export interface ActiveSeriesPoint {
   key: string;
@@ -52,8 +57,14 @@ export interface ChartContextValue {
   xAccessor: (datum: unknown, index: number) => XValue;
   /** Default single-series y accessor (for <LineSeries>, <Bars>, ...). */
   yAccessor: (datum: unknown, index: number) => number;
-  /** Resolved multi-series, empty unless `series` was passed to <Chart>. */
+  /** Visible multi-series (hidden ones removed), what marks should draw. */
   series: readonly ResolvedSeries[];
+  /** Every series including hidden ones, with visibility flags, for <Legend>. */
+  allSeries: readonly LegendSeries[];
+  /** Toggle a series' visibility by key. Rescales and repaints. */
+  toggleSeries: (key: string) => void;
+  /** DOM slot beneath the chart surface that <Legend> portals into. */
+  legendSlot: HTMLElement | null;
   /** The datum currently under the pointer, or null when not hovering. */
   active: ActivePoint | null;
   store: MarkStore;

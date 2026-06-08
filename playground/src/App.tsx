@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { categoricalColors } from '@chartistry/core';
 import { createSvgRenderer } from '@chartistry/renderer-svg';
 import { createCanvasRenderer } from '@chartistry/renderer-canvas';
 import {
@@ -8,6 +7,7 @@ import {
   Crosshair,
   Grid,
   Highlight,
+  Legend,
   Lines,
   LineSeries,
   Points,
@@ -44,8 +44,6 @@ export function App() {
     () => (rendererKind === 'svg' ? createSvgRenderer() : createCanvasRenderer()),
     [rendererKind],
   );
-
-  const isMultiSeries = chartKind !== 'area';
 
   return (
     <main className="app">
@@ -84,7 +82,7 @@ export function App() {
         )}
       </section>
 
-      <section className="stage" style={{ width: WIDTH, height: HEIGHT }}>
+      <section className="stage" style={{ width: WIDTH }}>
         {/* key forces a clean re-mount of the renderer when the backend changes */}
         <ChartView
           key={`${chartKind}-${rendererKind}`}
@@ -94,11 +92,10 @@ export function App() {
         />
       </section>
 
-      {isMultiSeries && <Legend keys={categorySeries.map((s) => s.key)} />}
-
       <footer className="meta">
         Rendering a <strong>{CHART_OPTIONS.find((o) => o.value === chartKind)?.label}</strong> chart
         through the <strong>{rendererKind.toUpperCase()}</strong> backend.
+        {chartKind !== 'area' && <> Click a legend item to toggle the series.</>}
       </footer>
     </main>
   );
@@ -154,6 +151,7 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
         <BarGroup radius={3} groupPadding={0.15} />
         <Crosshair />
         <Tooltip />
+        <Legend />
       </Chart>
     );
   }
@@ -167,6 +165,7 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
         <StackedBars radius={3} />
         <Crosshair />
         <Tooltip />
+        <Legend />
       </Chart>
     );
   }
@@ -181,23 +180,8 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
       <Crosshair horizontal />
       <Highlight />
       <Tooltip />
+      <Legend />
     </Chart>
-  );
-}
-
-function Legend({ keys }: { keys: string[] }) {
-  return (
-    <ul className="legend">
-      {keys.map((key, i) => (
-        <li key={key}>
-          <span
-            className="legend__swatch"
-            style={{ background: categoricalColors[i % categoricalColors.length] }}
-          />
-          {key}
-        </li>
-      ))}
-    </ul>
   );
 }
 

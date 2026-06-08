@@ -109,31 +109,6 @@ body {
     0 8px 24px rgba(15, 23, 42, 0.05);
 }
 
-.legend {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  padding: 0;
-  margin: 18px 0 0;
-}
-
-.legend li {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--ink);
-  text-transform: capitalize;
-}
-
-.legend__swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  display: inline-block;
-}
-
 .meta {
   margin-top: 20px;
   font-size: 14px;
