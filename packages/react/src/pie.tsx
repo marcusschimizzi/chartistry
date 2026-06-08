@@ -62,15 +62,19 @@ export function Pie(props: PieProps): null {
     [data, value, props.padAngle],
   );
 
-  // The hovered slice's original index, or null. Driven by the pointer
-  // subscription, which only flips this on a slice change — not every move.
+  // The hovered slice's original index, or null, plus whether the pointer is in
+  // the plot at all. Driven by the pointer subscription; both flip only on a real
+  // change (primitive setState bails otherwise), so moves don't re-render.
   const [pointerIndex, setPointerIndex] = useState<number | null>(null);
+  const [pointerInPlot, setPointerInPlot] = useState(false);
 
-  // The focused slice: pointer hover wins, otherwise the keyboard-focused datum
-  // (the Chart's `active`, which a pie's cartesian hit-test never sets, so it
-  // reflects keyboard navigation here). Either way, `interactive` gates the pop.
+  // The focused slice. While the pointer is in the plot it is the sole source of
+  // truth — a miss (donut hole, angular gap) pops nothing, even though the
+  // Chart's cartesian `active` may be set for a numeric x. Only when the pointer
+  // is absent does focus fall back to the keyboard-navigated datum. `interactive`
+  // gates both.
   const keyboardIndex = active ? active.index : null;
-  const focusIndex = interactive ? (pointerIndex ?? keyboardIndex) : null;
+  const focusIndex = !interactive ? null : pointerInPlot ? pointerIndex : keyboardIndex;
 
   // Keep geometry in a ref so the once-registered pointer listener reads fresh
   // values without re-subscribing on every layout change.
@@ -79,11 +83,17 @@ export function Pie(props: PieProps): null {
 
   useEffect(() => {
     if (!interactive) {
+      setPointerInPlot(false);
       setPointerIndex(null);
       return;
     }
     return subscribePointer((point) => {
-      if (!point) return setPointerIndex(null);
+      if (!point) {
+        setPointerInPlot(false);
+        setPointerIndex(null);
+        return;
+      }
+      setPointerInPlot(true);
       const g = geometryRef.current;
       const hit = arcHitTest(point.x, point.y, g.slices, {
         cx: g.cx,
