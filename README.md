@@ -144,7 +144,9 @@ Add `<Tooltip>`, `<Crosshair>`, and `<Highlight>` as children. They share a
 single pointer model resolved in the core via renderer-agnostic hit-testing, so
 they behave identically on SVG and Canvas. The crosshair and focus rings are
 painted into the scene graph; the tooltip is an HTML overlay you can fully
-restyle with a render prop.
+restyle with a render prop. They follow the chart's `orientation`: a horizontal
+chart gets a horizontal crosshair and a tooltip that sits beside the bars
+(flipping to the inner side near the edge).
 
 ```tsx
 import {

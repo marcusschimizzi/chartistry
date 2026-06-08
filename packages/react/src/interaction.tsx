@@ -8,8 +8,15 @@ export function useChartPointer(): ActivePoint | null {
   return useChartContext().active;
 }
 
+/** Pixel position of the value guide along the value axis (extreme point). */
+function valueGuide(active: ActivePoint): number {
+  const positions = active.points.map((p) => p.position);
+  // Vertical charts mark the topmost point; horizontal, the rightmost.
+  return active.orientation === 'horizontal' ? Math.max(...positions) : Math.min(...positions);
+}
+
 export interface CrosshairProps {
-  /** Also draw a horizontal guide through the topmost active point. */
+  /** Also draw a guide along the value axis through the extreme active point. */
   horizontal?: boolean;
   color?: string;
   strokeDash?: number[];
@@ -20,11 +27,14 @@ export function Crosshair(props: CrosshairProps): null {
   const { active, plot } = useChartContext();
 
   const node = useMemo<SceneNode | null>(() => {
-    if (!active) return null;
-    const topY = props.horizontal ? Math.min(...active.points.map((p) => p.y)) : undefined;
+    if (!active || active.points.length === 0) return null;
+    const horizontal = active.orientation === 'horizontal';
+    const value = props.horizontal ? valueGuide(active) : undefined;
+    // The category guide runs across the value axis; the value guide (optional)
+    // runs across the category axis — swapped for horizontal layouts.
     return crosshairMark({
-      x: active.x,
-      y: topY,
+      x: horizontal ? value : active.category,
+      y: horizontal ? active.category : value,
       width: plot.width,
       height: plot.height,
       color: props.color,
@@ -49,10 +59,11 @@ export function Highlight(props: HighlightProps): null {
 
   const node = useMemo<SceneNode | null>(() => {
     if (!active) return null;
+    const horizontal = active.orientation === 'horizontal';
     const rings = active.points.map((p) =>
       circle({
-        cx: active.x,
-        cy: p.y,
+        cx: horizontal ? p.position : active.category,
+        cy: horizontal ? active.category : p.position,
         r: radius,
         fill: '#ffffff',
         stroke: p.color,
@@ -71,35 +82,46 @@ export function Highlight(props: HighlightProps): null {
 export interface TooltipProps {
   /** Custom content; receives the active point. Defaults to a value list. */
   children?: (active: ActivePoint) => ReactNode;
-  /** Vertical gap between the tooltip and the active point, in pixels. */
+  /** Gap between the tooltip and the active point, in pixels. */
   offset?: number;
 }
 
 /**
  * An HTML overlay positioned over the active datum. Kept as DOM (not a scene
  * node) so content is freely styleable and accessible, and so it works the
- * same regardless of which renderer painted the chart underneath.
+ * same regardless of which renderer painted the chart underneath. It sits above
+ * the data for vertical charts and beside it for horizontal ones.
  */
 export function Tooltip(props: TooltipProps): ReactNode {
   const { active, plot } = useChartContext();
-  if (!active) return null;
+  if (!active || active.points.length === 0) return null;
 
   const offset = props.offset ?? 12;
-  const topY = Math.min(...active.points.map((p) => p.y));
-  const left = active.x + plot.x;
-  const top = topY + plot.y - offset;
+  const value = valueGuide(active);
 
-  const wrapperStyle: CSSProperties = {
-    position: 'absolute',
-    left,
-    top,
-    transform: 'translate(-50%, -100%)',
-    pointerEvents: 'none',
-    zIndex: 2,
-  };
+  // Flip the tooltip to the inner side when the bar/point reaches the far edge,
+  // so a long bar (or a high value) doesn't push the panel off the plot.
+  const wrapperStyle: CSSProperties =
+    active.orientation === 'horizontal'
+      ? (() => {
+          const flip = value > plot.width / 2;
+          return {
+            left: value + plot.x + (flip ? -offset : offset),
+            top: active.category + plot.y,
+            transform: flip ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+          };
+        })()
+      : (() => {
+          const flip = value < 60;
+          return {
+            left: active.category + plot.x,
+            top: value + plot.y + (flip ? offset : -offset),
+            transform: flip ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+          };
+        })();
 
   return (
-    <div style={wrapperStyle}>
+    <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 2, ...wrapperStyle }}>
       {props.children ? props.children(active) : <DefaultTooltip active={active} />}
     </div>
   );

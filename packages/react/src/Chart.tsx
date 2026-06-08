@@ -371,16 +371,17 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     const datum = data[activeIndex];
     const points = interactiveSeries.map((s) => {
       const value = s.y(datum, activeIndex);
-      return { key: s.key, color: s.color, value, y: valueScale(value) };
+      return { key: s.key, color: s.color, value, position: valueScale(value) };
     });
     return {
       index: activeIndex,
       datum,
       xValue: x(data[activeIndex] as D, activeIndex),
-      x: positions[activeIndex] ?? 0,
+      category: positions[activeIndex] ?? 0,
+      orientation,
       points,
     };
-  }, [activeIndex, data, interactiveSeries, positions, valueScale, x]);
+  }, [activeIndex, data, interactiveSeries, positions, valueScale, x, orientation]);
 
   // Paint the current frame from the store, coalescing bursts into one repaint.
   const paint = useCallback(() => {

@@ -256,6 +256,8 @@ function ChartView({ chartKind, renderer, lineData, timeData, donut }: ChartView
         <YAxis />
         <XAxis />
         <BarGroup radius={3} groupPadding={0.15} />
+        <Crosshair />
+        <Tooltip />
         <Legend />
       </Chart>
     );

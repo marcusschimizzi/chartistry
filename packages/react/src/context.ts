@@ -25,23 +25,25 @@ export interface LegendSeries extends ResolvedSeries {
   hidden: boolean;
 }
 
-/** One series' value at the active datum, with its plot-local y in pixels. */
+/** One series' value at the active datum, with its pixel position on the value axis. */
 export interface ActiveSeriesPoint {
   key: string;
   color: string;
   value: number;
-  /** Plot-local y position, in pixels. */
-  y: number;
+  /** Plot-local pixel position along the value axis (y for vertical, x for horizontal). */
+  position: number;
 }
 
 /** The datum currently under the pointer, resolved across every series. */
 export interface ActivePoint {
   index: number;
   datum: unknown;
-  /** The datum's x value (category or number). */
+  /** The datum's category value. */
   xValue: XValue;
-  /** Plot-local x position, in pixels (band center for band scales). */
-  x: number;
+  /** Plot-local pixel position along the category axis (band center). */
+  category: number;
+  /** `horizontal` means the value axis runs along x and categories along y. */
+  orientation: 'vertical' | 'horizontal';
   points: ActiveSeriesPoint[];
 }
 
