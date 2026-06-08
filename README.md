@@ -145,7 +145,9 @@ createCanvasRenderer({ transition: false }); // snap, no animation
 
 Pointer-driven marks (crosshair, highlight) carry `animate: false` so they track
 the cursor instantly. Because the animator is pure scene-to-scene, it's unit
-tested without a DOM.
+tested without a DOM. When a line's point count changes, its path is resampled
+to a shared resolution and morphed point-wise, then snapped exactly to the
+target — so adding or removing data reshapes the line smoothly.
 
 ## Development
 
@@ -174,13 +176,13 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
 - ✅ Pluggable renderer interface with SVG and Canvas backends
 - ✅ Backend-agnostic transition animator: enter/update/exit, shared by both renderers
+- ✅ Polyline path morphing (resampling) when a line's point count changes
 - ✅ React adapter with composable components
 - ✅ Playground proving every chart type, interaction, and transitions across both renderers
 
 ### Roadmap ideas
 
 - More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
-- Path interpolation for polylines whose point count changes (resampling)
 - Accessibility (ARIA, keyboard) baked into the scene model
 - Additional adapters (Vue, Svelte, Web Components)
 

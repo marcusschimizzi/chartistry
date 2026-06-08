@@ -1,5 +1,7 @@
 import type { GroupNode, SceneNode } from '../scene/nodes';
+import type { Point } from '../types';
 import { flatten, isClosed, withGeometry } from './geometry';
+import { resamplePoints } from './resample';
 
 /** Cubic ease-in-out — the default transition curve. */
 export const easeCubicInOut = (t: number): number =>
@@ -40,6 +42,8 @@ interface RNode {
   /** Current interpolated geometry (last entry is opacity). */
   current: number[];
   anim: Anim | null;
+  /** Exact geometry to snap to when a resampled (morph) tween finishes. */
+  settleTo: number[] | null;
   children: Map<string, RNode>;
   order: string[];
   parent: RNode | null;
@@ -86,6 +90,7 @@ export function createAnimator(options: AnimatorOptions): Animator {
       base: next,
       current: target.slice(),
       anim: null,
+      settleTo: null,
       children: new Map(),
       order: [],
       parent: null,
@@ -120,13 +125,41 @@ export function createAnimator(options: AnimatorOptions): Animator {
     node.exiting = false;
     const target = flatten(next);
     const reference = node.anim ? node.anim.to : node.current;
+    const lengthChanged = target.length !== node.current.length;
 
-    if (!canAnimate || !animate || target.length !== node.current.length) {
+    if (!canAnimate || !animate) {
       node.anim = null;
+      node.settleTo = null;
+      active.delete(node);
+      node.current = target;
+    } else if (next.type === 'polyline' && lengthChanged) {
+      // The point count changed: resample both paths to a shared resolution so
+      // they can be lerped point-wise, then snap to the exact target on finish.
+      const n = Math.max(polylinePointCount(node.current), polylinePointCount(target));
+      const from = resamplePolyline(node.current, n);
+      const to = resamplePolyline(target, n);
+      if (node.anim && arraysEqual(node.anim.to, to)) {
+        // Already morphing toward this shape — let it continue.
+      } else if (arraysEqual(from, to)) {
+        node.anim = null;
+        node.settleTo = null;
+        active.delete(node);
+        node.current = target;
+      } else {
+        node.current = from;
+        node.anim = { from, to, start: now(), duration };
+        node.settleTo = target;
+        active.add(node);
+      }
+    } else if (lengthChanged) {
+      // Mismatched lengths we can't morph (non-polyline) — just snap.
+      node.anim = null;
+      node.settleTo = null;
       active.delete(node);
       node.current = target;
     } else if (!arraysEqual(target, reference)) {
       node.anim = { from: node.current.slice(), to: target, start: now(), duration };
+      node.settleTo = null;
       active.add(node);
     }
 
@@ -225,7 +258,9 @@ export function createAnimator(options: AnimatorOptions): Animator {
       }
       const raw = anim.duration <= 0 ? 1 : (t - anim.start) / anim.duration;
       if (raw >= 1) {
-        node.current = anim.to;
+        // Morph tweens settle on the exact target, not the resampled endpoint.
+        node.current = node.settleTo ?? anim.to;
+        node.settleTo = null;
         node.anim = null;
         finished.push(node);
       } else {
@@ -276,4 +311,21 @@ function arraysEqual(a: number[], b: number[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
   return true;
+}
+
+/**
+ * A flattened polyline is `[strokeWidth, opacity, x0, y0, x1, y1, ...]`.
+ * These helpers resample just the point part, preserving the scalar prefix.
+ */
+function polylinePointCount(flat: number[]): number {
+  return Math.max(0, (flat.length - 2) >> 1);
+}
+
+function resamplePolyline(flat: number[], count: number): number[] {
+  const points: Point[] = [];
+  for (let i = 2; i < flat.length; i += 2) points.push({ x: flat[i] ?? 0, y: flat[i + 1] ?? 0 });
+  const resampled = resamplePoints(points, count);
+  const out: number[] = [flat[0] ?? 1, flat[1] ?? 1];
+  for (const p of resampled) out.push(p.x, p.y);
+  return out;
 }
