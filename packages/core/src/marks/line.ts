@@ -1,4 +1,4 @@
-import { group, polyline, type SceneNode } from '../scene/nodes';
+import { area, group, polyline, type SceneNode } from '../scene/nodes';
 import type { Point } from '../types';
 import type { Scale } from '../scales/types';
 
@@ -51,19 +51,11 @@ export function lineMark<D, X extends string | number = number>(
     return linePath;
   }
 
-  const baselineY = yScale(options.baseline ?? 0);
-  const first = points[0]!;
-  const last = points[points.length - 1]!;
-  const areaPoints: Point[] = [
-    { x: first.x, y: baselineY },
-    ...points,
-    { x: last.x, y: baselineY },
-  ];
-
-  const areaPath = polyline(areaPoints, {
+  // The area shares the line's exact point array (its baseline caps are added
+  // by the renderer), so the two stay perfectly coupled when a morph resamples.
+  const areaPath = area(points, {
+    baseline: yScale(options.baseline ?? 0),
     fill: options.fill ?? withAlpha(stroke, 0.15),
-    stroke: 'none',
-    closed: true,
     key: options.key ? `${options.key}:area` : undefined,
   });
 

@@ -29,6 +29,8 @@ export function flatten(node: SceneNode): number[] {
       return [node.x, node.y, node.fontSize ?? 11, node.opacity ?? 1];
     case 'polyline':
       return [node.strokeWidth ?? 1, node.opacity ?? 1, ...node.points.flatMap((p) => [p.x, p.y])];
+    case 'area':
+      return [node.baseline, node.opacity ?? 1, ...node.points.flatMap((p) => [p.x, p.y])];
   }
 }
 
@@ -82,6 +84,11 @@ export function withGeometry(base: SceneNode, a: number[], children?: SceneNode[
       const points: Point[] = [];
       for (let i = 2; i < a.length; i += 2) points.push({ x: a[i] ?? 0, y: a[i + 1] ?? 0 });
       return { ...base, strokeWidth: a[0] ?? 1, opacity: a[1] ?? 1, points };
+    }
+    case 'area': {
+      const points: Point[] = [];
+      for (let i = 2; i < a.length; i += 2) points.push({ x: a[i] ?? 0, y: a[i + 1] ?? 0 });
+      return { ...base, baseline: a[0] ?? 0, opacity: a[1] ?? 1, points };
     }
   }
 }

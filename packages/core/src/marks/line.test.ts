@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { linearScale } from '../scales/linear';
 import { lineMark } from './line';
-import type { GroupNode, PolylineNode } from '../scene/nodes';
+import type { AreaNode, GroupNode, PolylineNode } from '../scene/nodes';
 
 const xScale = linearScale({ domain: [0, 3], range: [0, 300] });
 const yScale = linearScale({ domain: [0, 10], range: [100, 0] });
@@ -33,9 +33,13 @@ describe('lineMark', () => {
     }) as GroupNode;
     expect(node.type).toBe('group');
     expect(node.children).toHaveLength(2);
-    const area = node.children[0] as PolylineNode;
-    expect(area.closed).toBe(true);
-    // Area is anchored to the baseline at both ends.
-    expect(area.points[0]).toEqual({ x: 0, y: yScale(0) });
+
+    const area = node.children[0] as AreaNode;
+    const line = node.children[1] as PolylineNode;
+    expect(area.type).toBe('area');
+    expect(area.baseline).toBe(yScale(0));
+    // The area shares the line's exact points (no baseline-cap vertices), which
+    // is what keeps the two coupled when a transition morphs them.
+    expect(area.points).toEqual(line.points);
   });
 });

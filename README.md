@@ -147,7 +147,10 @@ Pointer-driven marks (crosshair, highlight) carry `animate: false` so they track
 the cursor instantly. Because the animator is pure scene-to-scene, it's unit
 tested without a DOM. When a line's point count changes, its path is resampled
 to a shared resolution and morphed point-wise, then snapped exactly to the
-target — so adding or removing data reshapes the line smoothly.
+target — so adding or removing data reshapes the line smoothly. A filled area is
+its own scene node that shares the line's exact point array (its baseline caps
+are added by the renderer), so the line and area stay perfectly coupled as they
+morph.
 
 ## Development
 
@@ -176,7 +179,7 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
 - ✅ Pluggable renderer interface with SVG and Canvas backends
 - ✅ Backend-agnostic transition animator: enter/update/exit, shared by both renderers
-- ✅ Polyline path morphing (resampling) when a line's point count changes
+- ✅ Polyline/area path morphing (resampling) when a line's point count changes
 - ✅ React adapter with composable components
 - ✅ Playground proving every chart type, interaction, and transitions across both renderers
 

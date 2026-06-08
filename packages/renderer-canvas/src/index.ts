@@ -1,5 +1,6 @@
 import {
   createAnimator,
+  type AreaNode,
   type CircleNode,
   type GroupNode,
   type LineNode,
@@ -95,6 +96,8 @@ function drawNode(ctx: CanvasRenderingContext2D, node: SceneNode, alpha: number)
       return drawLine(ctx, node, alpha);
     case 'polyline':
       return drawPolyline(ctx, node, alpha);
+    case 'area':
+      return drawArea(ctx, node, alpha);
     case 'rect':
       return drawRect(ctx, node, alpha);
     case 'circle':
@@ -137,6 +140,28 @@ function drawPolyline(ctx: CanvasRenderingContext2D, node: PolylineNode, alpha: 
     ctx.fill();
   }
   if (node.stroke && node.stroke !== 'none') ctx.stroke();
+  ctx.restore();
+}
+
+function drawArea(ctx: CanvasRenderingContext2D, node: AreaNode, alpha: number): void {
+  if (node.points.length === 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha * (node.opacity ?? 1);
+  ctx.beginPath();
+  node.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+  const first = node.points[0]!;
+  const last = node.points[node.points.length - 1]!;
+  ctx.lineTo(last.x, node.baseline);
+  ctx.lineTo(first.x, node.baseline);
+  ctx.closePath();
+  if (node.fill && node.fill !== 'none') {
+    ctx.fillStyle = node.fill;
+    ctx.fill();
+  }
+  if (node.stroke && node.stroke !== 'none') {
+    applyStroke(ctx, node);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 

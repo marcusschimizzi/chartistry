@@ -132,7 +132,7 @@ export function createAnimator(options: AnimatorOptions): Animator {
       node.settleTo = null;
       active.delete(node);
       node.current = target;
-    } else if (next.type === 'polyline' && lengthChanged) {
+    } else if ((next.type === 'polyline' || next.type === 'area') && lengthChanged) {
       // The point count changed: resample both paths to a shared resolution so
       // they can be lerped point-wise, then snap to the exact target on finish.
       const n = Math.max(polylinePointCount(node.current), polylinePointCount(target));

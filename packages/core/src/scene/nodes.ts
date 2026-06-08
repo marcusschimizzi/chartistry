@@ -70,6 +70,19 @@ export interface PolylineNode extends NodeBase, Style {
   closed?: boolean;
 }
 
+/**
+ * A filled region between a sequence of points and a horizontal `baseline`.
+ * Unlike a closed polyline, the baseline caps are reconstructed by the renderer
+ * from `points`, so an area shares the exact same point array as its companion
+ * line — which keeps the two perfectly coupled when a transition morphs them.
+ */
+export interface AreaNode extends NodeBase, Style {
+  type: 'area';
+  points: Point[];
+  /** Y value (in the same space as `points`) to fill down to. */
+  baseline: number;
+}
+
 export interface RectNode extends NodeBase, Style {
   type: 'rect';
   x: number;
@@ -94,7 +107,14 @@ export interface TextNode extends NodeBase, TextStyle {
   text: string;
 }
 
-export type SceneNode = GroupNode | LineNode | PolylineNode | RectNode | CircleNode | TextNode;
+export type SceneNode =
+  | GroupNode
+  | LineNode
+  | PolylineNode
+  | AreaNode
+  | RectNode
+  | CircleNode
+  | TextNode;
 
 /* ------------------------------------------------------------------ *
  * Constructor helpers — terser and safer than building object literals.
@@ -116,6 +136,10 @@ export function polyline(
   style: Omit<PolylineNode, 'type' | 'points'> = {},
 ): PolylineNode {
   return { type: 'polyline', points, ...style };
+}
+
+export function area(points: Point[], props: Omit<AreaNode, 'type' | 'points'>): AreaNode {
+  return { type: 'area', points, ...props };
 }
 
 export function rect(props: Omit<RectNode, 'type'>): RectNode {

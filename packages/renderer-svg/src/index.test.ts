@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { axisLeft, createChart, group, lineMark, linearScale, rect } from '@chartistry/core';
+import { area, axisLeft, createChart, group, lineMark, linearScale, rect } from '@chartistry/core';
 import { createSvgRenderer } from './index';
 
 function buildScene() {
@@ -113,5 +113,33 @@ describe('createSvgRenderer keyed diffing', () => {
 
     handle.render(bars([10, 20, 30]));
     expect(host.querySelectorAll('rect')).toHaveLength(3);
+  });
+
+  it('renders an area as a polygon capped to its baseline', () => {
+    host = document.createElement('div');
+    const handle = createSvgRenderer({ transition: false }).mount(host, {
+      width: 200,
+      height: 100,
+    });
+
+    const scene = group(
+      [
+        area(
+          [
+            { x: 0, y: 10 },
+            { x: 50, y: 40 },
+          ],
+          { key: 'a', baseline: 100, fill: '#abc' },
+        ),
+      ],
+      { key: 'root' },
+    );
+    handle.render(scene);
+
+    const polygon = host.querySelector('polygon')!;
+    expect(polygon).not.toBeNull();
+    // The two data points, then the two baseline caps (last.x, first.x at y=100).
+    expect(polygon.getAttribute('points')).toBe('0,10 50,40 50,100 0,100');
+    expect(polygon.getAttribute('fill')).toBe('#abc');
   });
 });

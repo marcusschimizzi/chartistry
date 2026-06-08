@@ -157,6 +157,13 @@ function applyAttributes(el: SVGElement, node: SceneNode): void {
       applyStroke(el, node, 'none');
       setOpacity(el, node.opacity ?? 1);
       break;
+    case 'area':
+      el.setAttribute('points', areaPolygonPoints(node.points, node.baseline));
+      el.setAttribute('fill', node.fill ?? 'none');
+      if (node.stroke) el.setAttribute('stroke', node.stroke);
+      else el.removeAttribute('stroke');
+      setOpacity(el, node.opacity ?? 1);
+      break;
     case 'rect':
       el.setAttribute('x', String(node.x));
       el.setAttribute('y', String(node.y));
@@ -196,6 +203,8 @@ function createElement(node: SceneNode): SVGElement {
       return el('line');
     case 'polyline':
       return el(node.closed ? 'polygon' : 'polyline');
+    case 'area':
+      return el('polygon');
     case 'rect':
       return el('rect');
     case 'circle':
@@ -211,6 +220,15 @@ function el(tag: string): SVGElement {
 
 function isClosed(node: SceneNode): boolean {
   return node.type === 'polyline' && node.closed === true;
+}
+
+/** Polygon points for an area: the path, then capped down to the baseline. */
+function areaPolygonPoints(points: readonly { x: number; y: number }[], baseline: number): string {
+  if (points.length === 0) return '';
+  const first = points[0]!;
+  const last = points[points.length - 1]!;
+  const top = points.map((p) => `${p.x},${p.y}`).join(' ');
+  return `${top} ${last.x},${baseline} ${first.x},${baseline}`;
 }
 
 function setOpacity(element: SVGElement, opacity: number): void {
