@@ -100,6 +100,20 @@ export interface CircleNode extends NodeBase, Style {
   r: number;
 }
 
+/**
+ * An annular sector (pie slice / donut segment). Angles are in radians measured
+ * clockwise from 12 o'clock. `innerRadius` of 0 makes a solid pie slice.
+ */
+export interface ArcNode extends NodeBase, Style {
+  type: 'arc';
+  cx: number;
+  cy: number;
+  innerRadius: number;
+  outerRadius: number;
+  startAngle: number;
+  endAngle: number;
+}
+
 export interface TextNode extends NodeBase, TextStyle {
   type: 'text';
   x: number;
@@ -114,6 +128,7 @@ export type SceneNode =
   | AreaNode
   | RectNode
   | CircleNode
+  | ArcNode
   | TextNode;
 
 /* ------------------------------------------------------------------ *
@@ -148,6 +163,10 @@ export function rect(props: Omit<RectNode, 'type'>): RectNode {
 
 export function circle(props: Omit<CircleNode, 'type'>): CircleNode {
   return { type: 'circle', ...props };
+}
+
+export function arc(props: Omit<ArcNode, 'type'>): ArcNode {
+  return { type: 'arc', ...props };
 }
 
 export function text(value: string, props: Omit<TextNode, 'type' | 'text'>): TextNode {

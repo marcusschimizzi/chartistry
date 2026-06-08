@@ -1,5 +1,6 @@
 import {
   createAnimator,
+  type ArcNode,
   type GroupNode,
   type Renderer,
   type RendererHandle,
@@ -180,6 +181,11 @@ function applyAttributes(el: SVGElement, node: SceneNode): void {
       applyStroke(el, node);
       setOpacity(el, node.opacity ?? 1);
       break;
+    case 'arc':
+      el.setAttribute('d', arcPath(node));
+      applyStroke(el, node);
+      setOpacity(el, node.opacity ?? 1);
+      break;
     case 'text':
       el.setAttribute('x', String(node.x));
       el.setAttribute('y', String(node.y));
@@ -209,6 +215,8 @@ function createElement(node: SceneNode): SVGElement {
       return el('rect');
     case 'circle':
       return el('circle');
+    case 'arc':
+      return el('path');
     case 'text':
       return el('text');
   }
@@ -220,6 +228,34 @@ function el(tag: string): SVGElement {
 
 function isClosed(node: SceneNode): boolean {
   return node.type === 'polyline' && node.closed === true;
+}
+
+const TAU = Math.PI * 2;
+
+/** SVG path data for an annular sector (angles clockwise from 12 o'clock). */
+function arcPath(node: ArcNode): string {
+  const { cx, cy, innerRadius: ir, outerRadius: or, startAngle: a0, endAngle: a1 } = node;
+  const at = (r: number, a: number) =>
+    `${(cx + r * Math.sin(a)).toFixed(3)},${(cy - r * Math.cos(a)).toFixed(3)}`;
+  const span = a1 - a0;
+
+  // A full turn can't be a single SVG arc, so split it into two halves.
+  if (Math.abs(span) >= TAU - 1e-6) {
+    const mid = a0 + Math.PI;
+    const ring = (r: number) =>
+      `M ${at(r, a0)} A ${r},${r} 0 1 1 ${at(r, mid)} A ${r},${r} 0 1 1 ${at(r, a0)}`;
+    return ir <= 0 ? `${ring(or)} Z` : `${ring(or)} ${ring(ir)} Z`;
+  }
+
+  const large = Math.abs(span) > Math.PI ? 1 : 0;
+  const sweep = span >= 0 ? 1 : 0;
+  if (ir <= 0) {
+    return `M ${cx},${cy} L ${at(or, a0)} A ${or},${or} 0 ${large} ${sweep} ${at(or, a1)} Z`;
+  }
+  return (
+    `M ${at(or, a0)} A ${or},${or} 0 ${large} ${sweep} ${at(or, a1)} ` +
+    `L ${at(ir, a1)} A ${ir},${ir} 0 ${large} ${1 - sweep} ${at(ir, a0)} Z`
+  );
 }
 
 /** Polygon points for an area: the path, then capped down to the baseline. */

@@ -45,8 +45,8 @@ export interface ChartProps<D> {
   width: number;
   height: number;
   data: readonly D[];
-  /** Accessor for the x value of a datum (a number, or a category for band). */
-  x: (datum: D, index: number) => XValue;
+  /** Accessor for the x value of a datum. Defaults to the datum's index. */
+  x?: (datum: D, index: number) => XValue;
   /** Single-series y accessor. Optional when `series` is provided instead. */
   y?: (datum: D, index: number) => number;
   /** Horizontal scale kind. `band` for categories, `time` for date axes. */
@@ -96,7 +96,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     width,
     height,
     data,
-    x,
+    x = (_d, i) => i,
     y,
     xScaleType = 'linear',
     series,

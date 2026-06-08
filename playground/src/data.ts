@@ -43,6 +43,20 @@ export interface TimePoint {
   value: number;
 }
 
+/** A single-series categorical dataset for the pie/donut demo. */
+export interface ShareRow {
+  name: string;
+  value: number;
+}
+
+export const shareData: ShareRow[] = [
+  { name: 'Chrome', value: 64 },
+  { name: 'Safari', value: 19 },
+  { name: 'Edge', value: 5 },
+  { name: 'Firefox', value: 3 },
+  { name: 'Other', value: 9 },
+];
+
 export function sampleTimeSeries(days = 120): TimePoint[] {
   const start = new Date(2024, 0, 1);
   const out: TimePoint[] = [];

@@ -21,6 +21,7 @@ export {
   type StackedBarsProps,
 } from './bars';
 export { XAxis, YAxis, type AxisProps, Grid, type GridProps } from './axes';
+export { Pie, type PieProps } from './pie';
 export { Legend, type LegendProps } from './legend';
 export {
   Crosshair,

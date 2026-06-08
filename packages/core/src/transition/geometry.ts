@@ -25,6 +25,16 @@ export function flatten(node: SceneNode): number[] {
       ];
     case 'circle':
       return [node.cx, node.cy, Math.max(0, node.r), node.strokeWidth ?? 1, node.opacity ?? 1];
+    case 'arc':
+      return [
+        node.cx,
+        node.cy,
+        Math.max(0, node.innerRadius),
+        Math.max(0, node.outerRadius),
+        node.startAngle,
+        node.endAngle,
+        node.opacity ?? 1,
+      ];
     case 'text':
       return [node.x, node.y, node.fontSize ?? 11, node.opacity ?? 1];
     case 'polyline':
@@ -77,6 +87,17 @@ export function withGeometry(base: SceneNode, a: number[], children?: SceneNode[
         r: a[2] ?? 0,
         strokeWidth: a[3] ?? 1,
         opacity: a[4] ?? 1,
+      };
+    case 'arc':
+      return {
+        ...base,
+        cx: a[0] ?? 0,
+        cy: a[1] ?? 0,
+        innerRadius: a[2] ?? 0,
+        outerRadius: a[3] ?? 0,
+        startAngle: a[4] ?? 0,
+        endAngle: a[5] ?? 0,
+        opacity: a[6] ?? 1,
       };
     case 'text':
       return { ...base, x: a[0] ?? 0, y: a[1] ?? 0, fontSize: a[2] ?? 11, opacity: a[3] ?? 1 };

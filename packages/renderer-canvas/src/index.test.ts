@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createChart, lineMark, linearScale, pointMark } from '@chartistry/core';
+import { createChart, lineMark, linearScale, pieMark, pointMark } from '@chartistry/core';
 import { createCanvasRenderer } from './index';
 
 /**
@@ -92,5 +92,23 @@ describe('createCanvasRenderer', () => {
     expect(recording.calls).toContain('lineTo');
     // One arc per data point.
     expect(recording.calls.filter((c) => c === 'arc')).toHaveLength(3);
+  });
+
+  it('draws a pie slice as a filled wedge', () => {
+    const host = document.createElement('div');
+    const handle = createCanvasRenderer({ pixelRatio: 1 }).mount(host, { width: 100, height: 100 });
+    const scene = pieMark({
+      data: [{ v: 1 }, { v: 1 }],
+      value: (d) => d.v,
+      cx: 50,
+      cy: 50,
+      outerRadius: 40,
+    });
+    handle.render(scene);
+
+    // Two wedges: each is an arc + lineTo(center) + fill.
+    expect(recording.calls.filter((c) => c === 'arc')).toHaveLength(2);
+    expect(recording.calls.filter((c) => c === 'lineTo')).toHaveLength(2);
+    expect(recording.calls).toContain('fill');
   });
 });

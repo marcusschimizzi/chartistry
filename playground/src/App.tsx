@@ -10,6 +10,7 @@ import {
   Legend,
   Lines,
   LineSeries,
+  Pie,
   Points,
   StackedBars,
   Tooltip,
@@ -17,10 +18,10 @@ import {
   YAxis,
   type ActivePoint,
 } from '@chartistry/react';
-import { categoryData, categorySeries, sampleSeries, sampleTimeSeries } from './data';
+import { categoryData, categorySeries, sampleSeries, sampleTimeSeries, shareData } from './data';
 
 type RendererKind = 'svg' | 'canvas';
-type ChartKind = 'area' | 'time' | 'multiline' | 'grouped' | 'stacked';
+type ChartKind = 'area' | 'time' | 'multiline' | 'grouped' | 'stacked' | 'pie';
 
 const WIDTH = 720;
 const HEIGHT = 420;
@@ -32,6 +33,7 @@ const CHART_OPTIONS: ReadonlyArray<{ value: ChartKind; label: string }> = [
   { value: 'multiline', label: 'Multi-line' },
   { value: 'grouped', label: 'Grouped bars' },
   { value: 'stacked', label: 'Stacked bars' },
+  { value: 'pie', label: 'Pie / donut' },
 ];
 
 const formatDay = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
@@ -43,7 +45,8 @@ export function App() {
 
   const lineData = useMemo(() => sampleSeries(points), [points]);
   const timeData = useMemo(() => sampleTimeSeries(Math.round(points * 1.5)), [points]);
-  const showSlider = chartKind === 'area' || chartKind === 'time';
+  const donut = ((points - 4) / 116) * 0.75; // slider drives the donut hole
+  const showSlider = chartKind === 'area' || chartKind === 'time' || chartKind === 'pie';
 
   // One renderer instance per kind; flipping it re-mounts the backend in place.
   const renderer = useMemo(
@@ -77,7 +80,11 @@ export function App() {
         {showSlider && (
           <label className="slider">
             <span>
-              {chartKind === 'time' ? `Days: ${Math.round(points * 1.5)}` : `Points: ${points}`}
+              {chartKind === 'time'
+                ? `Days: ${Math.round(points * 1.5)}`
+                : chartKind === 'pie'
+                  ? `Donut: ${Math.round(donut * 100)}%`
+                  : `Points: ${points}`}
             </span>
             <input
               type="range"
@@ -98,13 +105,16 @@ export function App() {
           renderer={renderer}
           lineData={lineData}
           timeData={timeData}
+          donut={donut}
         />
       </section>
 
       <footer className="meta">
         Rendering a <strong>{CHART_OPTIONS.find((o) => o.value === chartKind)?.label}</strong> chart
         through the <strong>{rendererKind.toUpperCase()}</strong> backend.
-        {chartKind !== 'area' && <> Click a legend item to toggle the series.</>}
+        {(chartKind === 'grouped' || chartKind === 'stacked' || chartKind === 'multiline') && (
+          <> Click a legend item to toggle the series.</>
+        )}
       </footer>
     </main>
   );
@@ -115,9 +125,28 @@ interface ChartViewProps {
   renderer: ReturnType<typeof createSvgRenderer>;
   lineData: ReturnType<typeof sampleSeries>;
   timeData: ReturnType<typeof sampleTimeSeries>;
+  donut: number;
 }
 
-function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) {
+function ChartView({ chartKind, renderer, lineData, timeData, donut }: ChartViewProps) {
+  if (chartKind === 'pie') {
+    return (
+      <Chart
+        width={WIDTH}
+        height={HEIGHT}
+        data={shareData}
+        x={(d) => d.name}
+        y={(d) => d.value}
+        renderer={renderer}
+        title="Browser share"
+        description="Share of page views by browser."
+        xLabel="Browser"
+      >
+        <Pie innerRadius={donut} padAngle={0.015} label={(d) => (d as { name: string }).name} />
+      </Chart>
+    );
+  }
+
   if (chartKind === 'area') {
     return (
       <Chart

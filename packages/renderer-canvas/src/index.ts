@@ -1,5 +1,6 @@
 import {
   createAnimator,
+  type ArcNode,
   type AreaNode,
   type CircleNode,
   type GroupNode,
@@ -102,6 +103,8 @@ function drawNode(ctx: CanvasRenderingContext2D, node: SceneNode, alpha: number)
       return drawRect(ctx, node, alpha);
     case 'circle':
       return drawCircle(ctx, node, alpha);
+    case 'arc':
+      return drawArc(ctx, node, alpha);
     case 'text':
       return drawText(ctx, node, alpha);
   }
@@ -190,6 +193,32 @@ function drawCircle(ctx: CanvasRenderingContext2D, node: CircleNode, alpha: numb
     ctx.fill();
   }
   if (node.stroke && node.stroke !== 'none') ctx.stroke();
+  ctx.restore();
+}
+
+function drawArc(ctx: CanvasRenderingContext2D, node: ArcNode, alpha: number): void {
+  const span = node.endAngle - node.startAngle;
+  if (span === 0 || node.outerRadius <= 0) return;
+  // Convert "clockwise from 12 o'clock" to canvas angles (0 at 3 o'clock).
+  const a0 = node.startAngle - Math.PI / 2;
+  const a1 = node.endAngle - Math.PI / 2;
+  const ir = Math.max(0, node.innerRadius);
+
+  ctx.save();
+  ctx.globalAlpha = alpha * (node.opacity ?? 1);
+  ctx.beginPath();
+  ctx.arc(node.cx, node.cy, node.outerRadius, a0, a1, false);
+  if (ir > 0) ctx.arc(node.cx, node.cy, ir, a1, a0, true);
+  else ctx.lineTo(node.cx, node.cy);
+  ctx.closePath();
+  if (node.fill && node.fill !== 'none') {
+    ctx.fillStyle = node.fill;
+    ctx.fill();
+  }
+  if (node.stroke && node.stroke !== 'none') {
+    applyStroke(ctx, node);
+    ctx.stroke();
+  }
   ctx.restore();
 }
 

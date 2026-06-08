@@ -116,6 +116,24 @@ zoom in or out.
 </Chart>
 ```
 
+### Pie & donut
+
+`<Pie>` centers in the plot area and reads the chart's data — slice values come
+from the y accessor by default, keyed by the x value so slices tween when the
+data changes. Add `innerRadius` (a fraction of the outer radius) for a donut.
+
+```tsx
+import { Chart, Pie } from '@chartistry/react';
+
+<Chart width={420} height={420} data={rows} x={(d) => d.name} y={(d) => d.value} title="Share">
+  <Pie innerRadius={0.6} padAngle={0.02} label={(d) => d.name} />
+</Chart>;
+```
+
+Pies are built from a first-class `arc` scene node, so they render on both SVG
+(as a `<path>`) and Canvas, and their angles and radii animate like any other
+mark.
+
 ### Interaction
 
 Add `<Tooltip>`, `<Crosshair>`, and `<Highlight>` as children. They share a
@@ -207,15 +225,15 @@ pnpm lint           # lint
 pnpm build          # build all publishable packages
 ```
 
-The **playground** (`/playground`) is the living demo: it switches between
-area, multi-line, grouped-bar, and stacked-bar charts and lets you flip the
-renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
+The **playground** (`/playground`) is the living demo: it switches between area,
+time-series, multi-line, grouped/stacked-bar, and pie/donut charts and lets you
+flip the renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 
 ## Status
 
 - ✅ Framework-agnostic core (scales, scene graph, marks, layout)
 - ✅ Scales: linear, band, ordinal/color, and time (calendar-aware ticks)
-- ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars
+- ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars, pie/donut
 - ✅ Multi-series support with a reusable `stack()` data transform
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
@@ -228,7 +246,7 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 
 ### Roadmap ideas
 
-- More scales (log, symlog) and marks (horizontal bars, areas-as-stacks, pies)
+- More scales (log, symlog) and marks (horizontal bars, scatter, areas-as-stacks)
 - Series-level keyboard navigation (up/down to switch series)
 - Additional adapters (Vue, Svelte, Web Components)
 
