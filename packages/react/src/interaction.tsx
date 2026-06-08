@@ -60,7 +60,8 @@ export function Highlight(props: HighlightProps): null {
         key: `focus:${p.key}`,
       }),
     );
-    return group(rings, { key: 'highlight' });
+    // Focus rings track the pointer too, so they snap rather than ease.
+    return group(rings, { key: 'highlight', animate: false });
   }, [active, radius, strokeWidth]);
 
   useMark(node);

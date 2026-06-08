@@ -37,6 +37,12 @@ export interface TextStyle extends Style {
 interface NodeBase {
   /** Optional stable identity, used by renderers that diff between frames. */
   key?: string;
+  /**
+   * Renderer hint: set `false` to opt this node (and its subtree) out of
+   * enter/update/exit transitions. Use it for pointer-driven marks like the
+   * crosshair, which should track the cursor instantly rather than ease.
+   */
+  animate?: boolean;
 }
 
 /** A container that translates its children by (x, y). */

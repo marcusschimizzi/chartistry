@@ -52,5 +52,6 @@ export function crosshairMark(options: CrosshairOptions): SceneNode {
     );
   }
 
-  return group(lines, { key: options.key ?? 'crosshair' });
+  // Crosshairs follow the pointer, so they should snap, not ease.
+  return group(lines, { key: options.key ?? 'crosshair', animate: false });
 }

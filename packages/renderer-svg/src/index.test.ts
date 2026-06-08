@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { axisLeft, createChart, lineMark, linearScale } from '@chartistry/core';
+import { axisLeft, createChart, group, lineMark, linearScale, rect } from '@chartistry/core';
 import { createSvgRenderer } from './index';
 
 function buildScene() {
@@ -55,5 +55,63 @@ describe('createSvgRenderer', () => {
     const first = host.querySelectorAll('polyline').length;
     handle.render(buildScene());
     expect(host.querySelectorAll('polyline').length).toBe(first);
+  });
+});
+
+// Diffing is deterministic with transitions off (no async rAF tweening).
+describe('createSvgRenderer keyed diffing', () => {
+  const bars = (heights: number[]) =>
+    group(
+      heights.map((h, i) =>
+        rect({ key: `bar-${i}`, x: i * 20, y: 100 - h, width: 16, height: h, fill: '#000' }),
+      ),
+      { key: 'root' },
+    );
+
+  it('reuses the same DOM element for a stable key across renders', () => {
+    host = document.createElement('div');
+    const handle = createSvgRenderer({ transition: false }).mount(host, {
+      width: 200,
+      height: 100,
+    });
+
+    handle.render(bars([40, 60]));
+    const firstRect = host.querySelector('rect')!;
+    expect(firstRect).not.toBeNull();
+
+    handle.render(bars([80, 60]));
+    const afterRect = host.querySelector('rect')!;
+    // Same element instance, updated in place.
+    expect(afterRect).toBe(firstRect);
+    expect(afterRect.getAttribute('height')).toBe('80');
+    expect(afterRect.getAttribute('y')).toBe('20');
+  });
+
+  it('removes elements whose keys disappear', () => {
+    host = document.createElement('div');
+    const handle = createSvgRenderer({ transition: false }).mount(host, {
+      width: 200,
+      height: 100,
+    });
+
+    handle.render(bars([10, 20, 30]));
+    expect(host.querySelectorAll('rect')).toHaveLength(3);
+
+    handle.render(bars([10, 20]));
+    expect(host.querySelectorAll('rect')).toHaveLength(2);
+  });
+
+  it('adds elements for new keys', () => {
+    host = document.createElement('div');
+    const handle = createSvgRenderer({ transition: false }).mount(host, {
+      width: 200,
+      height: 100,
+    });
+
+    handle.render(bars([10]));
+    expect(host.querySelectorAll('rect')).toHaveLength(1);
+
+    handle.render(bars([10, 20, 30]));
+    expect(host.querySelectorAll('rect')).toHaveLength(3);
   });
 });

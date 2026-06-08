@@ -19,7 +19,7 @@ the chart logic.
 | Package                       | Responsibility                                                                                                         |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `@chartistry/core`            | Framework-agnostic core: scales, scene graph, marks, chart layout, and the `Renderer` interface. No DOM, no framework. |
-| `@chartistry/renderer-svg`    | Paints a scene graph into SVG DOM. The inspectable, CSS-friendly default.                                              |
+| `@chartistry/renderer-svg`    | Paints a scene graph into SVG DOM, retained and keyed — diffs between frames and animates the difference.              |
 | `@chartistry/renderer-canvas` | Paints the same scene graph onto a Canvas 2D context. For larger datasets.                                             |
 | `@chartistry/react`           | Composable React components (`<Chart>`, `<LineSeries>`, `<XAxis>`, …) over the core.                                   |
 
@@ -130,6 +130,20 @@ import {
 const active = useChartPointer();
 ```
 
+### Transitions
+
+The SVG renderer is retained: it matches scene nodes by `key` across frames,
+reuses the DOM, and tweens the difference — so toggling a series or changing
+data animates (bars regrow, axes reflow) instead of snapping. Tune or disable it:
+
+```ts
+createSvgRenderer({ transition: { duration: 320 } }); // the default
+createSvgRenderer({ transition: false }); // snap, no animation
+```
+
+Pointer-driven marks (crosshair, highlight) carry `animate: false` so they track
+the cursor instantly. The Canvas renderer repaints each frame and doesn't tween.
+
 ## Development
 
 This is a [pnpm](https://pnpm.io) workspace.
@@ -156,13 +170,14 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
 - ✅ Pluggable renderer interface with SVG and Canvas backends
+- ✅ Retained SVG renderer: keyed diffing + enter/update/exit transitions
 - ✅ React adapter with composable components
 - ✅ Playground proving every chart type — and interaction — across both renderers
 
 ### Roadmap ideas
 
 - More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
-- Keyed scene diffing in the SVG renderer; transitions
+- Keyed scene diffing in the Canvas renderer (so it tweens too)
 - Accessibility (ARIA, keyboard) baked into the scene model
 - Additional adapters (Vue, Svelte, Web Components)
 
