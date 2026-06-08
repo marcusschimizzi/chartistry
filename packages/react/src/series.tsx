@@ -14,7 +14,7 @@ export interface LineSeriesProps {
 
 /** A line (optionally filled) through the chart's single data series. */
 export function LineSeries(props: LineSeriesProps): null {
-  const { data, xScale, yScale, xAccessor, yAccessor } = useChartContext();
+  const { data, categoryScale, valueScale, xAccessor, yAccessor } = useChartContext();
 
   const node = useMemo(
     () =>
@@ -22,8 +22,8 @@ export function LineSeries(props: LineSeriesProps): null {
         data,
         x: xAccessor,
         y: yAccessor,
-        xScale,
-        yScale,
+        xScale: categoryScale,
+        yScale: valueScale,
         stroke: props.stroke,
         strokeWidth: props.strokeWidth,
         area: props.area,
@@ -32,8 +32,8 @@ export function LineSeries(props: LineSeriesProps): null {
       }),
     [
       data,
-      xScale,
-      yScale,
+      categoryScale,
+      valueScale,
       xAccessor,
       yAccessor,
       props.stroke,
@@ -57,7 +57,7 @@ export interface PointsProps {
 
 /** A dot at every datum in the chart's single data series. */
 export function Points(props: PointsProps): null {
-  const { data, xScale, yScale, xAccessor, yAccessor } = useChartContext();
+  const { data, categoryScale, valueScale, xAccessor, yAccessor } = useChartContext();
 
   const node = useMemo(
     () =>
@@ -65,8 +65,8 @@ export function Points(props: PointsProps): null {
         data,
         x: xAccessor,
         y: yAccessor,
-        xScale,
-        yScale,
+        xScale: categoryScale,
+        yScale: valueScale,
         radius: props.radius,
         fill: props.fill,
         stroke: props.stroke,
@@ -74,8 +74,8 @@ export function Points(props: PointsProps): null {
       }),
     [
       data,
-      xScale,
-      yScale,
+      categoryScale,
+      valueScale,
       xAccessor,
       yAccessor,
       props.radius,
@@ -98,7 +98,7 @@ export interface LinesProps {
 
 /** One colored line per entry in the chart's `series` — multi-line in a tag. */
 export function Lines(props: LinesProps): null {
-  const { data, xScale, yScale, xAccessor, series } = useChartContext();
+  const { data, categoryScale, valueScale, xAccessor, series } = useChartContext();
 
   const node = useMemo<SceneNode>(() => {
     const lines = series.map((s) =>
@@ -106,8 +106,8 @@ export function Lines(props: LinesProps): null {
         data,
         x: xAccessor,
         y: s.y,
-        xScale,
-        yScale,
+        xScale: categoryScale,
+        yScale: valueScale,
         stroke: s.color,
         strokeWidth: props.strokeWidth,
         area: props.area,
@@ -116,7 +116,16 @@ export function Lines(props: LinesProps): null {
       }),
     );
     return group(lines, { key: 'lines' });
-  }, [data, xScale, yScale, xAccessor, series, props.strokeWidth, props.area, props.baseline]);
+  }, [
+    data,
+    categoryScale,
+    valueScale,
+    xAccessor,
+    series,
+    props.strokeWidth,
+    props.area,
+    props.baseline,
+  ]);
 
   useMark(node);
   return null;

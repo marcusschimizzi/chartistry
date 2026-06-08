@@ -21,11 +21,12 @@ import {
 import { categoryData, categorySeries, sampleSeries, sampleTimeSeries, shareData } from './data';
 
 type RendererKind = 'svg' | 'canvas';
-type ChartKind = 'area' | 'time' | 'multiline' | 'grouped' | 'stacked' | 'pie';
+type ChartKind = 'area' | 'time' | 'multiline' | 'grouped' | 'stacked' | 'hbar' | 'pie';
 
 const WIDTH = 720;
 const HEIGHT = 420;
 const MARGIN = { top: 16, right: 20, bottom: 32, left: 44 };
+const HBAR_MARGIN = { top: 16, right: 20, bottom: 32, left: 56 };
 
 const CHART_OPTIONS: ReadonlyArray<{ value: ChartKind; label: string }> = [
   { value: 'area', label: 'Area' },
@@ -33,6 +34,7 @@ const CHART_OPTIONS: ReadonlyArray<{ value: ChartKind; label: string }> = [
   { value: 'multiline', label: 'Multi-line' },
   { value: 'grouped', label: 'Grouped bars' },
   { value: 'stacked', label: 'Stacked bars' },
+  { value: 'hbar', label: 'Horizontal bars' },
   { value: 'pie', label: 'Pie / donut' },
 ];
 
@@ -112,9 +114,10 @@ export function App() {
       <footer className="meta">
         Rendering a <strong>{CHART_OPTIONS.find((o) => o.value === chartKind)?.label}</strong> chart
         through the <strong>{rendererKind.toUpperCase()}</strong> backend.
-        {(chartKind === 'grouped' || chartKind === 'stacked' || chartKind === 'multiline') && (
-          <> Click a legend item to toggle the series.</>
-        )}
+        {(chartKind === 'grouped' ||
+          chartKind === 'stacked' ||
+          chartKind === 'multiline' ||
+          chartKind === 'hbar') && <> Click a legend item to toggle the series.</>}
       </footer>
     </main>
   );
@@ -234,6 +237,25 @@ function ChartView({ chartKind, renderer, lineData, timeData, donut }: ChartView
         <StackedBars radius={3} />
         <Crosshair />
         <Tooltip />
+        <Legend />
+      </Chart>
+    );
+  }
+
+  if (chartKind === 'hbar') {
+    return (
+      <Chart
+        {...shared}
+        orientation="horizontal"
+        bandPadding={0.25}
+        margin={HBAR_MARGIN}
+        title="Horizontal grouped bars"
+      >
+        {/* Value gridlines are vertical now; categories sit on the y axis. */}
+        <Grid axis="x" />
+        <YAxis />
+        <XAxis />
+        <BarGroup radius={3} groupPadding={0.15} />
         <Legend />
       </Chart>
     );

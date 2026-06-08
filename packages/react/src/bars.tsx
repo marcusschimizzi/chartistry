@@ -7,40 +7,43 @@ export interface BarsProps {
   fill?: string;
   baseline?: number;
   radius?: number;
-  /** Bar width when the chart uses a linear (non-band) x scale. */
-  width?: number;
+  /** Bar thickness when the category scale has no bandwidth (linear x). */
+  thickness?: number;
 }
 
 /**
- * Single-series vertical bars over the chart's data. Use with
- * `xScaleType="band"` on <Chart> for a categorical axis.
+ * Single-series bars over the chart's data. Use `xScaleType="band"` on <Chart>
+ * for a categorical axis, and `orientation="horizontal"` on <Chart> to lay them
+ * sideways.
  */
 export function Bars(props: BarsProps): null {
-  const { data, xScale, yScale, xAccessor, yAccessor } = useChartContext();
+  const { data, categoryScale, valueScale, orientation, xAccessor, yAccessor } = useChartContext();
 
   const node = useMemo(
     () =>
       barMark({
         data,
-        x: xAccessor,
-        y: yAccessor,
-        xScale,
-        yScale,
+        category: xAccessor,
+        value: yAccessor,
+        categoryScale,
+        valueScale,
+        orientation,
         fill: props.fill,
         baseline: props.baseline,
         radius: props.radius,
-        width: props.width,
+        thickness: props.thickness,
       }),
     [
       data,
-      xScale,
-      yScale,
+      categoryScale,
+      valueScale,
+      orientation,
       xAccessor,
       yAccessor,
       props.fill,
       props.baseline,
       props.radius,
-      props.width,
+      props.thickness,
     ],
   );
 
@@ -57,7 +60,7 @@ export interface BarGroupProps {
 
 /** Grouped multi-series bars from the chart's `series`. */
 export function BarGroup(props: BarGroupProps): null {
-  const { data, xScale, yScale, xAccessor, series } = useChartContext();
+  const { data, categoryScale, valueScale, orientation, xAccessor, series } = useChartContext();
 
   const barSeries = useMemo<BarSeries<unknown>[]>(
     () => series.map((s) => ({ key: s.key, value: s.y, color: s.color })),
@@ -68,15 +71,26 @@ export function BarGroup(props: BarGroupProps): null {
     () =>
       groupedBarMark({
         data,
-        x: xAccessor,
-        xScale,
-        yScale,
+        category: xAccessor,
+        categoryScale,
+        valueScale,
+        orientation,
         series: barSeries,
         baseline: props.baseline,
         radius: props.radius,
         groupPadding: props.groupPadding,
       }),
-    [data, xScale, yScale, xAccessor, barSeries, props.baseline, props.radius, props.groupPadding],
+    [
+      data,
+      categoryScale,
+      valueScale,
+      orientation,
+      xAccessor,
+      barSeries,
+      props.baseline,
+      props.radius,
+      props.groupPadding,
+    ],
   );
 
   useMark(node);
@@ -89,7 +103,7 @@ export interface StackedBarsProps {
 
 /** Stacked multi-series bars from the chart's `series`. */
 export function StackedBars(props: StackedBarsProps): null {
-  const { data, xScale, yScale, xAccessor, series } = useChartContext();
+  const { data, categoryScale, valueScale, orientation, xAccessor, series } = useChartContext();
 
   const barSeries = useMemo<BarSeries<unknown>[]>(
     () => series.map((s) => ({ key: s.key, value: s.y, color: s.color })),
@@ -100,13 +114,14 @@ export function StackedBars(props: StackedBarsProps): null {
     () =>
       stackedBarMark({
         data,
-        x: xAccessor,
-        xScale,
-        yScale,
+        category: xAccessor,
+        categoryScale,
+        valueScale,
+        orientation,
         series: barSeries,
         radius: props.radius,
       }),
-    [data, xScale, yScale, xAccessor, barSeries, props.radius],
+    [data, categoryScale, valueScale, orientation, xAccessor, barSeries, props.radius],
   );
 
   useMark(node);

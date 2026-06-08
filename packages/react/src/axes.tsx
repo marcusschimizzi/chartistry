@@ -32,12 +32,12 @@ export function XAxis(props: AxisProps<XValue>): null {
 }
 
 /** Left (y) axis, pinned to the left edge of the plot area. */
-export function YAxis(props: AxisProps<number>): null {
+export function YAxis(props: AxisProps<XValue>): null {
   const { yScale } = useChartContext();
 
   const node = useMemo(
     () =>
-      axisLeft<number>({
+      axisLeft<XValue>({
         scale: yScale,
         offset: 0,
         tickCount: props.tickCount,
@@ -75,7 +75,7 @@ export function Grid(props: GridProps): null {
             color: props.color,
             strokeDash: props.strokeDash,
           })
-        : gridMark<number>({
+        : gridMark<XValue>({
             scale: yScale,
             axis: 'y',
             length: plot.width,

@@ -22,6 +22,7 @@ import {
   stackExtent,
   timeScale,
   withinPlot,
+  type ContinuousScale,
   type MarginInput,
   type Renderer,
   type RendererHandle,
@@ -51,6 +52,11 @@ export interface ChartProps<D> {
   y?: (datum: D, index: number) => number;
   /** Horizontal scale kind. `band` for categories, `time` for date axes. */
   xScaleType?: 'linear' | 'band' | 'time';
+  /**
+   * Lay the value axis horizontally (categories on y). Used for horizontal bars.
+   * `x` stays the category accessor and `y` the value accessor either way.
+   */
+  orientation?: 'vertical' | 'horizontal';
   /** Named value series for multi-series marks (grouped/stacked bars, lines). */
   series?: ReadonlyArray<SeriesSpec<D>>;
   /** Make the y domain span stacked totals (for <StackedBars>). */
@@ -99,6 +105,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     x = (_d, i) => i,
     y,
     xScaleType = 'linear',
+    orientation = 'vertical',
     series,
     stackY = false,
     margin,
@@ -135,8 +142,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     [width, height, JSON.stringify(margin ?? null)],
   );
   const { plot, size } = chart;
+  const horizontal = orientation === 'horizontal';
 
-  // --- Horizontal scale: linear positions or categorical bands. ------------
+  // --- Category axis: linear positions, dates, or categorical bands. -------
   const categories = useMemo<XValue[]>(() => {
     if (xScaleType !== 'band') return [];
     if (xDomain) return [...xDomain];
@@ -161,28 +169,24 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         : extent(data.map((d, i) => Number(x(d, i))))
   ) as [number, number];
 
-  const xScale = useMemo<Scale<XValue>>(() => {
+  // The category axis runs along x for vertical charts, y for horizontal ones.
+  const categoryScale = useMemo<Scale<XValue>>(() => {
+    const range: [number, number] = horizontal ? [0, plot.height] : [0, plot.width];
     if (xScaleType === 'band') {
       // Bands are categorical (string | number); widen at the context boundary.
       return bandScale<string | number>({
         domain: categories as (string | number)[],
-        range: [0, plot.width],
+        range,
         paddingInner: bandPadding,
       }) as unknown as Scale<XValue>;
     }
     if (xScaleType === 'time') {
       // linX0/linX1 are epoch ms (Number(Date)); time scale handles the ticks.
-      return timeScale({
-        domain: [linX0, linX1],
-        range: [0, plot.width],
-      }) as unknown as Scale<XValue>;
+      return timeScale({ domain: [linX0, linX1], range }) as unknown as Scale<XValue>;
     }
     // Linear scale only accepts numbers; widen at the context boundary.
-    return linearScale({
-      domain: [linX0, linX1],
-      range: [0, plot.width],
-    }) as unknown as Scale<XValue>;
-  }, [xScaleType, categories, plot.width, bandPadding, linX0, linX1]);
+    return linearScale({ domain: [linX0, linX1], range }) as unknown as Scale<XValue>;
+  }, [xScaleType, categories, plot.width, plot.height, horizontal, bandPadding, linX0, linX1]);
 
   // --- Series resolution + legend visibility. ------------------------------
   const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(() => new Set());
@@ -233,10 +237,15 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, visibleSeries, stackSeries, stackY, y, JSON.stringify(yDomain ?? null)]);
 
-  const yScale = useMemo(
-    () => linearScale({ domain: [y0, y1], range: [plot.height, 0], nice: niceY }),
-    [y0, y1, plot.height, niceY],
-  );
+  // The value axis runs along y for vertical charts, x for horizontal ones.
+  const valueScale = useMemo<ContinuousScale>(() => {
+    const range: [number, number] = horizontal ? [0, plot.width] : [plot.height, 0];
+    return linearScale({ domain: [y0, y1], range, nice: niceY });
+  }, [y0, y1, plot.width, plot.height, horizontal, niceY]);
+
+  // Assign category/value to the actual x and y axes for this orientation.
+  const xScale = horizontal ? (valueScale as unknown as Scale<XValue>) : categoryScale;
+  const yScale = horizontal ? categoryScale : (valueScale as unknown as Scale<XValue>);
 
   // The series to interrogate on hover: the visible ones, or an implicit single
   // series wrapping the chart-level y accessor so single-series charts hover too.
@@ -252,10 +261,10 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     ];
   }, [visibleSeries, allSeries, y]);
 
-  // Pixel x of each datum (band center for band scales) — the hit-test targets.
+  // Pixel position of each datum along the category axis — the hit-test targets.
   const positions = useMemo<number[]>(
-    () => data.map((d, i) => xScale(x(d, i)) + xScale.bandwidth() / 2),
-    [data, xScale, x],
+    () => data.map((d, i) => categoryScale(x(d, i)) + categoryScale.bandwidth() / 2),
+    [data, categoryScale, x],
   );
 
   // --- Pointer tracking. activeIndex is the datum under the cursor. ---------
@@ -281,10 +290,12 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         setActive(null);
         return;
       }
-      const index = nearestIndex(localX, positionsRef.current);
+      // Hit-test along the category axis (x for vertical, y for horizontal).
+      const along = horizontal ? localY : localX;
+      const index = nearestIndex(along, positionsRef.current);
       setActive(index < 0 ? null : index);
     },
-    [plot.x, plot.y, plot.width, plot.height, setActive],
+    [plot.x, plot.y, plot.width, plot.height, horizontal, setActive],
   );
 
   const handlePointerLeave = useCallback(() => setActive(null), [setActive]);
@@ -292,10 +303,13 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   // --- Keyboard navigation + screen-reader announcements. ------------------
   const describeId = useId();
   const [liveText, setLiveText] = useState('');
+  // The category (x) accessor labels each datum; format via the category scale.
   const formatX = useMemo(
     () =>
-      (xScale.tickFormat ? xScale.tickFormat() : (v: XValue) => String(v)) as (v: XValue) => string,
-    [xScale],
+      (categoryScale.tickFormat ? categoryScale.tickFormat() : (v: XValue) => String(v)) as (
+        v: XValue,
+      ) => string,
+    [categoryScale],
   );
 
   const announce = useCallback(
@@ -357,7 +371,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     const datum = data[activeIndex];
     const points = interactiveSeries.map((s) => {
       const value = s.y(datum, activeIndex);
-      return { key: s.key, color: s.color, value, y: yScale(value) };
+      return { key: s.key, color: s.color, value, y: valueScale(value) };
     });
     return {
       index: activeIndex,
@@ -366,7 +380,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       x: positions[activeIndex] ?? 0,
       points,
     };
-  }, [activeIndex, data, interactiveSeries, positions, yScale, x]);
+  }, [activeIndex, data, interactiveSeries, positions, valueScale, x]);
 
   // Paint the current frame from the store, coalescing bursts into one repaint.
   const paint = useCallback(() => {
@@ -415,6 +429,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       data: data as readonly unknown[],
       xScale,
       yScale,
+      categoryScale,
+      valueScale,
+      orientation,
       xAccessor: x as (d: unknown, i: number) => XValue,
       yAccessor: (y ?? noY) as (d: unknown, i: number) => number,
       series: visibleSeries,
@@ -431,6 +448,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       data,
       xScale,
       yScale,
+      categoryScale,
+      valueScale,
+      orientation,
       x,
       y,
       visibleSeries,

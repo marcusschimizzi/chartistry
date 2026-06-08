@@ -97,6 +97,10 @@ const series = [
 </Chart>;
 ```
 
+Add `orientation="horizontal"` to `<Chart>` to lay the value axis along x with
+categories on the y axis — `<Bars>`, `<BarGroup>`, and `<StackedBars>` transpose
+to match. `x` stays the category accessor and `y` the value accessor either way.
+
 Add `<Legend>`, and clicking an item toggles that series off — Chartistry drops
 it from the scales, marks, and tooltip and rescales, while colors stay put. The
 legend renders beneath the chart and reads `series` automatically.
@@ -233,7 +237,7 @@ flip the renderer (SVG ↔ Canvas) at runtime — all from the same composable s
 
 - ✅ Framework-agnostic core (scales, scene graph, marks, layout)
 - ✅ Scales: linear, band, ordinal/color, and time (calendar-aware ticks)
-- ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars, pie/donut
+- ✅ Marks: line/area, points, axes, grid, bars (vertical & horizontal), grouped & stacked, pie/donut
 - ✅ Multi-series support with a reusable `stack()` data transform
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
 - ✅ Legend with click-to-toggle series (rescales scales, marks, and tooltip)
@@ -246,7 +250,7 @@ flip the renderer (SVG ↔ Canvas) at runtime — all from the same composable s
 
 ### Roadmap ideas
 
-- More scales (log, symlog) and marks (horizontal bars, scatter, areas-as-stacks)
+- More scales (log, symlog) and marks (scatter, areas-as-stacks)
 - Series-level keyboard navigation (up/down to switch series)
 - Additional adapters (Vue, Svelte, Web Components)
 

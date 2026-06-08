@@ -51,9 +51,16 @@ export interface ChartContextValue {
   plot: Rect;
   /** The chart's data rows, type-erased for context transport. */
   data: readonly unknown[];
-  /** Continuous (linear) or categorical (band) horizontal scale. */
+  /** The scale displayed on the x axis (category or value, per orientation). */
   xScale: Scale<XValue>;
-  yScale: ContinuousScale;
+  /** The scale displayed on the y axis (value or category, per orientation). */
+  yScale: Scale<XValue>;
+  /** Band/positional scale over categories, regardless of orientation. */
+  categoryScale: Scale<XValue>;
+  /** Linear scale over values, regardless of orientation. */
+  valueScale: ContinuousScale;
+  /** `horizontal` lays the value axis along x (categories on y). */
+  orientation: 'vertical' | 'horizontal';
   xAccessor: (datum: unknown, index: number) => XValue;
   /** Default single-series y accessor (for <LineSeries>, <Bars>, ...). */
   yAccessor: (datum: unknown, index: number) => number;

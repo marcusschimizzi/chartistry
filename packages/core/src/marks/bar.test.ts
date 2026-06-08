@@ -16,8 +16,8 @@ const data: Row[] = [
   { label: 'q2', a: 6, b: 3 },
 ];
 
-const xScale = bandScale<string>({ domain: ['q1', 'q2'], range: [0, 200] });
-const yScale = linearScale({ domain: [0, 10], range: [100, 0] });
+const catScale = bandScale<string>({ domain: ['q1', 'q2'], range: [0, 200] });
+const valScale = linearScale({ domain: [0, 10], range: [100, 0] });
 
 function rects(node: GroupNode): RectNode[] {
   const out: RectNode[] = [];
@@ -31,12 +31,18 @@ function rects(node: GroupNode): RectNode[] {
   return out;
 }
 
-describe('barMark', () => {
+describe('barMark (vertical)', () => {
   it('draws one bar per datum, sized to the band and value', () => {
-    const node = barMark({ data, x: (d) => d.label, y: (d) => d.a, xScale, yScale }) as GroupNode;
+    const node = barMark({
+      data,
+      category: (d) => d.label,
+      value: (d) => d.a,
+      categoryScale: catScale,
+      valueScale: valScale,
+    }) as GroupNode;
     const bars = rects(node);
     expect(bars).toHaveLength(2);
-    expect(bars[0]!.width).toBe(xScale.bandwidth());
+    expect(bars[0]!.width).toBe(catScale.bandwidth());
     // value 4 on a [0,10]->[100,0] scale sits at y=60, growing to baseline y=100.
     expect(bars[0]!.y).toBe(60);
     expect(bars[0]!.height).toBe(40);
@@ -46,10 +52,10 @@ describe('barMark', () => {
     const signed = linearScale({ domain: [-10, 10], range: [200, 0] });
     const node = barMark({
       data: [{ label: 'q1', a: -5, b: 0 }],
-      x: (d) => d.label,
-      y: (d) => d.a,
-      xScale,
-      yScale: signed,
+      category: (d) => d.label,
+      value: (d) => d.a,
+      categoryScale: catScale,
+      valueScale: signed,
     }) as GroupNode;
     const [bar] = rects(node);
     // baseline (0) is at y=100; value -5 is at y=150, so the bar sits below it.
@@ -57,15 +63,15 @@ describe('barMark', () => {
     expect(bar!.height).toBe(50);
   });
 
-  it('uses an explicit width when the x scale has no bandwidth', () => {
-    const linearX = linearScale({ domain: [0, 1], range: [0, 100] });
+  it('uses an explicit thickness when the category scale has no bandwidth', () => {
+    const linearCat = linearScale({ domain: [0, 1], range: [0, 100] });
     const node = barMark({
       data: [{ label: 'q1', a: 4, b: 0 }],
-      x: () => 0.5,
-      y: (d) => d.a,
-      xScale: linearX,
-      yScale,
-      width: 20,
+      category: () => 0.5,
+      value: (d) => d.a,
+      categoryScale: linearCat,
+      valueScale: valScale,
+      thickness: 20,
     }) as GroupNode;
     const [bar] = rects(node);
     expect(bar!.width).toBe(20);
@@ -74,36 +80,45 @@ describe('barMark', () => {
   });
 });
 
+describe('barMark (horizontal)', () => {
+  it('transposes: categories on y, values growing along x', () => {
+    const yBand = bandScale<string>({ domain: ['q1', 'q2'], range: [0, 200] });
+    const xValue = linearScale({ domain: [0, 10], range: [0, 300] });
+    const node = barMark({
+      data,
+      category: (d) => d.label,
+      value: (d) => d.a,
+      categoryScale: yBand,
+      valueScale: xValue,
+      orientation: 'horizontal',
+    }) as GroupNode;
+    const [bar] = rects(node);
+    // The band sits on the y axis...
+    expect(bar!.y).toBe(yBand('q1'));
+    expect(bar!.height).toBe(yBand.bandwidth());
+    // ...and the value grows along x from the baseline (0) to value 4 -> 120px.
+    expect(bar!.x).toBe(0);
+    expect(bar!.width).toBe(120);
+  });
+});
+
 describe('groupedBarMark', () => {
+  const series = [
+    { key: 'a', value: (d: Row) => d.a },
+    { key: 'b', value: (d: Row) => d.b },
+  ];
+
   it('splits each band into one sub-bar per series', () => {
     const node = groupedBarMark({
       data,
-      x: (d) => d.label,
-      xScale,
-      yScale,
-      series: [
-        { key: 'a', value: (d) => d.a },
-        { key: 'b', value: (d) => d.b },
-      ],
+      category: (d) => d.label,
+      categoryScale: catScale,
+      valueScale: valScale,
+      series,
     }) as GroupNode;
     const bars = rects(node);
     expect(bars).toHaveLength(4); // 2 categories x 2 series
-    // Sub-bars are narrower than the full band.
-    expect(bars[0]!.width).toBeLessThan(xScale.bandwidth());
-  });
-
-  it('colors series distinctly from the palette', () => {
-    const node = groupedBarMark({
-      data,
-      x: (d) => d.label,
-      xScale,
-      yScale,
-      series: [
-        { key: 'a', value: (d) => d.a },
-        { key: 'b', value: (d) => d.b },
-      ],
-    }) as GroupNode;
-    const bars = rects(node);
+    expect(bars[0]!.width).toBeLessThan(catScale.bandwidth());
     expect(bars[0]!.fill).not.toBe(bars[1]!.fill);
   });
 });
@@ -112,9 +127,9 @@ describe('stackedBarMark', () => {
   it('stacks series so segments sit contiguously within a band', () => {
     const node = stackedBarMark({
       data,
-      x: (d) => d.label,
-      xScale,
-      yScale,
+      category: (d) => d.label,
+      categoryScale: catScale,
+      valueScale: valScale,
       series: [
         { key: 'a', value: (d) => d.a },
         { key: 'b', value: (d) => d.b },
@@ -122,8 +137,7 @@ describe('stackedBarMark', () => {
     }) as GroupNode;
     const bars = rects(node);
     expect(bars).toHaveLength(4);
-    // Each stacked segment spans the full band width.
-    expect(bars[0]!.width).toBe(xScale.bandwidth());
+    expect(bars[0]!.width).toBe(catScale.bandwidth());
     // The second segment's bottom meets the first segment's top.
     const first = bars[0]!;
     const second = bars[1]!;
