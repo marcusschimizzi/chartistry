@@ -129,6 +129,52 @@ describe('Pie', () => {
     expect(sliceA().getAttribute('d')).toBe(before);
   });
 
+  it('pops the keyboard-focused slice and announces it', async () => {
+    const data = [
+      { name: 'a', v: 1 },
+      { name: 'b', v: 1 },
+    ];
+    const { container } = render(
+      <Chart
+        width={120}
+        height={120}
+        margin={0}
+        data={data}
+        x={(d) => d.name}
+        y={(d) => d.v}
+        renderer={createSvgRenderer({ transition: false })}
+        title="P"
+      >
+        <Pie activeOffset={8} />
+      </Chart>,
+    );
+    await flush();
+
+    const paths = () =>
+      Array.from(container.querySelectorAll('path')).map((p) => p.getAttribute('d'));
+    const rest = paths();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    const live = container.querySelector('[aria-live="polite"]') as HTMLElement;
+
+    // Arrow to the first slice: it pops (no pointer involved) and is announced.
+    fireEvent.keyDown(app, { key: 'ArrowRight' });
+    await flush();
+    expect(paths()[0]).not.toBe(rest[0]);
+    expect(paths()[1]).toBe(rest[1]); // the other slice stays put
+    expect(live.textContent).toContain('a');
+
+    // Arrow to the second slice: the pop moves with focus.
+    fireEvent.keyDown(app, { key: 'ArrowRight' });
+    await flush();
+    expect(paths()[0]).toBe(rest[0]); // first slice released
+    expect(paths()[1]).not.toBe(rest[1]); // second slice now popped
+
+    // Escape clears the focus pop.
+    fireEvent.keyDown(app, { key: 'Escape' });
+    await flush();
+    expect(paths()).toEqual(rest);
+  });
+
   it('misses the donut hole — no slice pops when the pointer is in the center', async () => {
     const data = [
       { name: 'a', v: 1 },

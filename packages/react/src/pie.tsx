@@ -16,9 +16,9 @@ export interface PieProps {
   padding?: number;
   /** Optional label drawn at each slice centroid. */
   label?: (datum: unknown, index: number) => string;
-  /** Pop the slice under the pointer outward. Default true. */
+  /** Pop the focused slice (pointer hover or keyboard) outward. Default true. */
   interactive?: boolean;
-  /** Pixels to pop the hovered slice outward. Defaults to 6. */
+  /** Pixels to pop the focused slice outward. Defaults to 6. */
   activeOffset?: number;
 }
 
@@ -38,10 +38,12 @@ interface PieGeometry {
  *
  * Hovering a slice pops it outward: the pointer is resolved to a slice with
  * pure angular hit-testing (radius + angle), so gaps and the donut hole
- * correctly register as no slice.
+ * correctly register as no slice. Arrow-key navigation pops the focused slice
+ * the same way (the Chart announces it via the live region), so the pie is
+ * usable without a pointer.
  */
 export function Pie(props: PieProps): null {
-  const { data, plot, xAccessor, yAccessor, subscribePointer } = useChartContext();
+  const { data, plot, xAccessor, yAccessor, subscribePointer, active } = useChartContext();
   const value = props.value ?? yAccessor;
   const padding = props.padding ?? 4;
   const interactive = props.interactive ?? true;
@@ -62,7 +64,13 @@ export function Pie(props: PieProps): null {
 
   // The hovered slice's original index, or null. Driven by the pointer
   // subscription, which only flips this on a slice change — not every move.
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [pointerIndex, setPointerIndex] = useState<number | null>(null);
+
+  // The focused slice: pointer hover wins, otherwise the keyboard-focused datum
+  // (the Chart's `active`, which a pie's cartesian hit-test never sets, so it
+  // reflects keyboard navigation here). Either way, `interactive` gates the pop.
+  const keyboardIndex = active ? active.index : null;
+  const focusIndex = interactive ? (pointerIndex ?? keyboardIndex) : null;
 
   // Keep geometry in a ref so the once-registered pointer listener reads fresh
   // values without re-subscribing on every layout change.
@@ -71,11 +79,11 @@ export function Pie(props: PieProps): null {
 
   useEffect(() => {
     if (!interactive) {
-      setActiveIndex(null);
+      setPointerIndex(null);
       return;
     }
     return subscribePointer((point) => {
-      if (!point) return setActiveIndex(null);
+      if (!point) return setPointerIndex(null);
       const g = geometryRef.current;
       const hit = arcHitTest(point.x, point.y, g.slices, {
         cx: g.cx,
@@ -83,7 +91,7 @@ export function Pie(props: PieProps): null {
         innerRadius: g.innerRadius,
         outerRadius: g.outerRadius,
       });
-      setActiveIndex(hit < 0 ? null : hit);
+      setPointerIndex(hit < 0 ? null : hit);
     });
   }, [interactive, subscribePointer]);
 
@@ -109,7 +117,7 @@ export function Pie(props: PieProps): null {
       colors: props.colors,
       id,
       label: props.label,
-      ...(activeIndex !== null ? { activeIndex, activeOffset } : {}),
+      ...(focusIndex !== null ? { activeIndex: focusIndex, activeOffset } : {}),
     });
   }, [
     data,
@@ -122,7 +130,7 @@ export function Pie(props: PieProps): null {
     props.colors,
     props.label,
     xAccessor,
-    activeIndex,
+    focusIndex,
     activeOffset,
   ]);
 
