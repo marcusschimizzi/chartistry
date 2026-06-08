@@ -375,6 +375,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
           break;
         case 'Escape':
           setActive(null);
+          notifyPointer(null);
           announce(null);
           return;
         default:
@@ -384,13 +385,16 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       setActive(next);
       announce(next);
     },
-    [data.length, setActive, announce],
+    [data.length, setActive, announce, notifyPointer],
   );
 
+  // Blur and Escape clear pointer-driven state too (e.g. a popped pie slice), so
+  // it can't linger after focus leaves until the next pointer move.
   const handleBlur = useCallback(() => {
     setActive(null);
+    notifyPointer(null);
     announce(null);
-  }, [setActive, announce]);
+  }, [setActive, announce, notifyPointer]);
 
   const active = useMemo<ActivePoint | null>(() => {
     if (activeIndex === null || activeIndex < 0 || activeIndex >= data.length) return null;

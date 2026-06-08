@@ -87,6 +87,48 @@ describe('Pie', () => {
     expect(sliceA().getAttribute('d')).toBe(before);
   });
 
+  it('releases the popped slice on blur and Escape', async () => {
+    const data = [
+      { name: 'a', v: 1 },
+      { name: 'b', v: 1 },
+    ];
+    const { container } = render(
+      <Chart
+        width={120}
+        height={120}
+        margin={0}
+        data={data}
+        x={(d) => d.name}
+        y={(d) => d.v}
+        renderer={createSvgRenderer({ transition: false })}
+        title="P"
+      >
+        <Pie activeOffset={8} />
+      </Chart>,
+    );
+    await flush();
+
+    const sliceA = () => container.querySelectorAll('path')[0] as SVGPathElement;
+    const before = sliceA().getAttribute('d');
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+
+    // Blur while a slice is popped: the pop must release, not linger.
+    movePointer(app, 90, 60);
+    await flush();
+    expect(sliceA().getAttribute('d')).not.toBe(before);
+    fireEvent.blur(app);
+    await flush();
+    expect(sliceA().getAttribute('d')).toBe(before);
+
+    // Same for Escape.
+    movePointer(app, 90, 60);
+    await flush();
+    expect(sliceA().getAttribute('d')).not.toBe(before);
+    fireEvent.keyDown(app, { key: 'Escape' });
+    await flush();
+    expect(sliceA().getAttribute('d')).toBe(before);
+  });
+
   it('misses the donut hole — no slice pops when the pointer is in the center', async () => {
     const data = [
       { name: 'a', v: 1 },
