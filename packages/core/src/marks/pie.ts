@@ -18,6 +18,10 @@ export interface PieMarkOptions<D> {
   colors?: readonly string[];
   /** Stable key per slice, so slices tween across data changes. */
   id?: (datum: D, index: number) => string;
+  /** Original index of the slice to emphasize (e.g. the one under the pointer). */
+  activeIndex?: number;
+  /** Pixels to pop the active slice outward along its mid-angle. Defaults to 0. */
+  activeOffset?: number;
   /** Optional label drawn at each slice's centroid. */
   label?: (datum: D, index: number) => string;
   labelColor?: string;
@@ -44,13 +48,20 @@ export function pieMark<D>(options: PieMarkOptions<D>): SceneNode {
     ...(options.sort ? { sort: options.sort } : {}),
   });
 
+  const activeOffset = options.activeOffset ?? 0;
+
   const nodes: SceneNode[] = [];
   slices.forEach((slice) => {
     const sliceKey = options.id ? options.id(slice.datum, slice.index) : `slice:${slice.index}`;
+    // Pop the active slice outward along its mid-angle (same placement math as
+    // arcCentroid), so hover/focus reads as a slight pull-out from the pie.
+    const pop = slice.index === options.activeIndex ? activeOffset : 0;
+    const ox = pop ? Math.sin(slice.midAngle) * pop : 0;
+    const oy = pop ? -Math.cos(slice.midAngle) * pop : 0;
     nodes.push(
       arc({
-        cx,
-        cy,
+        cx: cx + ox,
+        cy: cy + oy,
         innerRadius,
         outerRadius,
         startAngle: slice.startAngle,
@@ -60,7 +71,7 @@ export function pieMark<D>(options: PieMarkOptions<D>): SceneNode {
       }),
     );
     if (options.label && slice.endAngle - slice.startAngle > 0.05) {
-      const c = arcCentroid(cx, cy, labelRadius, slice.midAngle);
+      const c = arcCentroid(cx + ox, cy + oy, labelRadius, slice.midAngle);
       nodes.push(
         text(options.label(slice.datum, slice.index), {
           x: c.x,

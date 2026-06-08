@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { ContinuousScale, Rect, Scale, Size } from '@chartistry/core';
+import type { ContinuousScale, Point, Rect, Scale, Size } from '@chartistry/core';
 import type { MarkStore } from './mark-store';
 
 /** A category (band), position (linear), or instant (time) domain value. */
@@ -76,6 +76,13 @@ export interface ChartContextValue {
   legendSlot: HTMLElement | null;
   /** The datum currently under the pointer, or null when not hovering. */
   active: ActivePoint | null;
+  /**
+   * Subscribe to plot-local pointer moves; the listener receives {x, y} relative
+   * to the plot origin, or null when the pointer leaves the plot. Imperative on
+   * purpose: marks that need fine-grained pointer data (e.g. {@link Pie} angular
+   * hit-testing) can read it without re-rendering the chart on every move.
+   */
+  subscribePointer: (listener: (point: Point | null) => void) => () => void;
   store: MarkStore;
   /** Ask the Chart to repaint the active renderer on the next microtask. */
   requestPaint: () => void;
