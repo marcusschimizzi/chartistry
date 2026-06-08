@@ -223,7 +223,9 @@ export function createAnimator(options: AnimatorOptions): Animator {
   function detach(node: RNode): void {
     active.delete(node);
     const parent = node.parent;
-    if (parent) {
+    // Only unlink if the parent still points here: a node with the same key may
+    // have re-entered while this one was exiting, and it must not be clobbered.
+    if (parent && parent.children.get(node.key) === node) {
       parent.children.delete(node.key);
       parent.order = parent.order.filter((k) => k !== node.key);
     }

@@ -1,6 +1,6 @@
 import type { Scale } from './types';
 
-export interface BandScaleOptions<T extends string | number> {
+export interface BandScaleOptions<T extends string | number | Date> {
   domain: readonly T[];
   range: readonly [number, number];
   /** Padding between bands, as a fraction of the step. 0–1. */
@@ -18,7 +18,9 @@ export interface BandScaleOptions<T extends string | number> {
  * bands across the range — the workhorse for bar charts and categorical axes.
  * `scale(value)` returns the band's start; `bandwidth()` its width.
  */
-export function bandScale<T extends string | number>(options: BandScaleOptions<T>): Scale<T> {
+export function bandScale<T extends string | number | Date>(
+  options: BandScaleOptions<T>,
+): Scale<T> {
   const domain = options.domain;
   const [r0, r1] = options.range;
   const paddingInner = clamp01(options.paddingInner ?? options.padding ?? 0);
@@ -34,11 +36,14 @@ export function bandScale<T extends string | number>(options: BandScaleOptions<T
   const bandwidthValue = step * (1 - paddingInner);
   const start = rangeStart + (totalSpan - step * (n - paddingInner)) * align;
 
-  const index = new Map<T, number>();
-  domain.forEach((value, i) => index.set(value, i));
+  // Dates are objects, so a Map would key them by reference — two equal-instant
+  // Dates would land in different bands. Normalize to a primitive (epoch ms) so
+  // lookups compare by value, the way string/number keys already do.
+  const index = new Map<string | number, number>();
+  domain.forEach((value, i) => index.set(keyOf(value), i));
 
   const scale = ((value: T): number => {
-    const i = index.get(value);
+    const i = index.get(keyOf(value));
     if (i === undefined) return NaN;
     return start + step * i + (step - bandwidthValue) / 2;
   }) as Scale<T>;
@@ -56,4 +61,9 @@ export function bandScale<T extends string | number>(options: BandScaleOptions<T
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+/** Collapse a domain value to a primitive so Map keys compare by value. */
+function keyOf(value: string | number | Date): string | number {
+  return value instanceof Date ? value.getTime() : value;
 }

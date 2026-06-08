@@ -25,4 +25,16 @@ describe('bandScale', () => {
     const scale = bandScale({ domain: ['x', 'y', 'z'], range: [0, 30] });
     expect(scale.ticks()).toEqual(['x', 'y', 'z']);
   });
+
+  it('keys Date domains by instant, not object identity', () => {
+    const d0 = new Date('2024-01-01');
+    const d1 = new Date('2024-01-02');
+    const scale = bandScale({ domain: [d0, d1], range: [0, 200] });
+    // A distinct Date instance with the same instant must hit the same band.
+    expect(scale(new Date('2024-01-01'))).toBe(scale(d0));
+    expect(scale(new Date('2024-01-02'))).toBe(scale(d1));
+    expect(scale(d0)).not.toBe(scale(d1));
+    // An instant outside the domain still misses.
+    expect(Number.isNaN(scale(new Date('2024-01-03')))).toBe(true);
+  });
 });

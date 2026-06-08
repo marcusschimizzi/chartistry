@@ -130,6 +130,37 @@ describe('createAnimator', () => {
     expect((frames.at(-1) as GroupNode).children.some((c) => c.key === 'b1')).toBe(false);
   });
 
+  it('keeps a re-entered key when the prior exiting node later finishes', () => {
+    const h = harness();
+    const frames: SceneNode[] = [];
+    const animator = createAnimator({
+      duration: 100,
+      easing: (t) => t,
+      onFrame: (s) => frames.push(s),
+      now: h.now,
+      requestFrame: h.requestFrame,
+      cancelFrame: h.cancelFrame,
+    });
+
+    animator.commit(bars([40, 60]));
+    h.step(100); // settle enter
+
+    animator.commit(bars([40])); // b1 begins exiting (fade finishes at +100)
+    h.step(50); // b1 half-faded, still present
+
+    animator.commit(bars([40, 60])); // b1 re-enters before its exit completed
+
+    // Step past both the lingering exit and the new fade-in. When the original
+    // exiting b1 finishes, its detach must not clobber the re-entered b1.
+    h.step(200);
+
+    const final = frames.at(-1) as GroupNode;
+    const reentered = final.children.filter((c) => c.key === 'b1');
+    expect(reentered).toHaveLength(1);
+    expect((reentered[0] as RectNode).opacity).toBe(1);
+    expect((reentered[0] as RectNode).height).toBe(60);
+  });
+
   it('morphs a polyline whose point count changes, then snaps to the exact target', () => {
     const h = harness();
     const frames: SceneNode[] = [];

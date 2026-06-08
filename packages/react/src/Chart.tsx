@@ -149,11 +149,14 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     if (xScaleType !== 'band') return [];
     if (xDomain) return [...xDomain];
     const seen: XValue[] = [];
-    const known = new Set<XValue>();
+    // Dates are objects: dedup by primitive instant so two equal-instant Dates
+    // collapse to one band, matching how bandScale keys its domain.
+    const known = new Set<string | number>();
     data.forEach((d, i) => {
       const value = x(d, i);
-      if (!known.has(value)) {
-        known.add(value);
+      const key = value instanceof Date ? value.getTime() : value;
+      if (!known.has(key)) {
+        known.add(key);
         seen.push(value);
       }
     });
@@ -161,21 +164,24 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xScaleType, data, JSON.stringify(xDomain ?? null)]);
 
+  // Time accepts Date | ISO string | epoch ms; linear, plain numbers.
+  const toAxisNumber =
+    xScaleType === 'time' ? (v: XValue) => +new Date(v) : (v: XValue) => Number(v);
   const [linX0, linX1] = (
     xScaleType === 'band'
       ? [0, 0]
       : xDomain
-        ? [Number(xDomain[0]), Number(xDomain[1])]
-        : extent(data.map((d, i) => Number(x(d, i))))
+        ? [toAxisNumber(xDomain[0]!), toAxisNumber(xDomain[1]!)]
+        : extent(data.map((d, i) => toAxisNumber(x(d, i))))
   ) as [number, number];
 
   // The category axis runs along x for vertical charts, y for horizontal ones.
   const categoryScale = useMemo<Scale<XValue>>(() => {
     const range: [number, number] = horizontal ? [0, plot.height] : [0, plot.width];
     if (xScaleType === 'band') {
-      // Bands are categorical (string | number); widen at the context boundary.
-      return bandScale<string | number>({
-        domain: categories as (string | number)[],
+      // bandScale accepts string | number | Date and keys Dates by instant.
+      return bandScale<XValue>({
+        domain: categories,
         range,
         paddingInner: bandPadding,
       }) as unknown as Scale<XValue>;
