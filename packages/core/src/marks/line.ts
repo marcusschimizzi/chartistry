@@ -2,13 +2,14 @@ import { group, polyline, type SceneNode } from '../scene/nodes';
 import type { Point } from '../types';
 import type { Scale } from '../scales/types';
 
-export interface LineMarkOptions<D> {
+export interface LineMarkOptions<D, X extends string | number = number> {
   data: readonly D[];
   /** Map a datum to its x domain value. */
-  x: (datum: D, index: number) => number;
+  x: (datum: D, index: number) => X;
   /** Map a datum to its y domain value. */
   y: (datum: D, index: number) => number;
-  xScale: Scale<number>;
+  /** Continuous or band scale; band values are centered on their bandwidth. */
+  xScale: Scale<X>;
   yScale: Scale<number>;
   stroke?: string;
   strokeWidth?: number;
@@ -24,13 +25,16 @@ export interface LineMarkOptions<D> {
  * A line (or filled area) through a data series. Pure: give it data, accessors,
  * and scales, and it returns a scene node in plot-local coordinates.
  */
-export function lineMark<D>(options: LineMarkOptions<D>): SceneNode {
+export function lineMark<D, X extends string | number = number>(
+  options: LineMarkOptions<D, X>,
+): SceneNode {
   const { data, x, y, xScale, yScale } = options;
   const stroke = options.stroke ?? '#4f46e5';
   const strokeWidth = options.strokeWidth ?? 2;
+  const halfBand = xScale.bandwidth() / 2;
 
   const points: Point[] = data.map((d, i) => ({
-    x: xScale(x(d, i)),
+    x: xScale(x(d, i)) + halfBand,
     y: yScale(y(d, i)),
   }));
 

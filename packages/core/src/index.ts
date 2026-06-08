@@ -9,5 +9,6 @@ export * from './types';
 export * from './scene';
 export * from './renderer';
 export * from './scales';
+export * from './data';
 export * from './marks';
 export * from './chart';

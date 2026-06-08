@@ -15,3 +15,24 @@ export function sampleSeries(count = 24): Datum[] {
   }
   return data;
 }
+
+/** Categorical multi-series rows, e.g. quarterly figures across product lines. */
+export interface CategoryRow {
+  quarter: string;
+  desktop: number;
+  mobile: number;
+  tablet: number;
+}
+
+export const categoryData: CategoryRow[] = [
+  { quarter: 'Q1', desktop: 44, mobile: 30, tablet: 12 },
+  { quarter: 'Q2', desktop: 52, mobile: 38, tablet: 15 },
+  { quarter: 'Q3', desktop: 48, mobile: 46, tablet: 18 },
+  { quarter: 'Q4', desktop: 61, mobile: 54, tablet: 22 },
+];
+
+export const categorySeries = [
+  { key: 'desktop', y: (d: CategoryRow) => d.desktop },
+  { key: 'mobile', y: (d: CategoryRow) => d.mobile },
+  { key: 'tablet', y: (d: CategoryRow) => d.tablet },
+];

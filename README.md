@@ -73,6 +73,29 @@ import { Chart, Grid, LineSeries, Points, XAxis, YAxis } from '@chartistry/react
 
 Pass `renderer={createCanvasRenderer()}` to `<Chart>` to switch backends.
 
+### Multi-series bars
+
+Declare a `series` array once, then drop in whichever multi-series mark you want
+— grouped bars, stacked bars, or multi-line. Colors are assigned from a
+categorical palette automatically.
+
+```tsx
+import { Chart, BarGroup, StackedBars, Lines, XAxis, YAxis, Grid } from '@chartistry/react';
+
+const series = [
+  { key: 'desktop', y: (d) => d.desktop },
+  { key: 'mobile', y: (d) => d.mobile },
+  { key: 'tablet', y: (d) => d.tablet },
+];
+
+<Chart width={720} height={420} data={rows} x={(d) => d.quarter} xScaleType="band" series={series}>
+  <Grid axis="y" />
+  <YAxis />
+  <XAxis />
+  <BarGroup radius={3} /> {/* or <StackedBars /> (add `stackY` to <Chart>), or <Lines /> */}
+</Chart>;
+```
+
 ## Development
 
 This is a [pnpm](https://pnpm.io) workspace.
@@ -86,22 +109,23 @@ pnpm lint           # lint
 pnpm build          # build all publishable packages
 ```
 
-The **playground** (`/playground`) is the living demo: it renders one line chart
-and lets you flip the renderer (SVG ↔ Canvas) and the API (React ↔ vanilla core)
-at runtime to prove they share a single chart spec.
+The **playground** (`/playground`) is the living demo: it switches between
+area, multi-line, grouped-bar, and stacked-bar charts and lets you flip the
+renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 
 ## Status
 
-Early days — this is the first end-to-end milestone:
-
 - ✅ Framework-agnostic core (scales, scene graph, marks, layout)
+- ✅ Scales: linear, band, and ordinal/color
+- ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars
+- ✅ Multi-series support with a reusable `stack()` data transform
 - ✅ Pluggable renderer interface with SVG and Canvas backends
 - ✅ React adapter with composable components
-- ✅ Playground proving one spec across renderers and APIs
+- ✅ Playground proving every chart type across both renderers
 
 ### Roadmap ideas
 
-- More scales (time, log, ordinal/color) and marks (bars, stacks, multi-series)
+- More scales (time, log) and marks (horizontal bars, areas-as-stacks, pies)
 - Keyed scene diffing in the SVG renderer; transitions
 - Interaction layer (tooltips, hover, crosshair) over the scene graph
 - Accessibility (ARIA, keyboard) baked into the scene model

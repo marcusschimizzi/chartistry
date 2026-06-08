@@ -1,11 +1,11 @@
 import { circle, group, type SceneNode } from '../scene/nodes';
 import type { Scale } from '../scales/types';
 
-export interface PointMarkOptions<D> {
+export interface PointMarkOptions<D, X extends string | number = number> {
   data: readonly D[];
-  x: (datum: D, index: number) => number;
+  x: (datum: D, index: number) => X;
   y: (datum: D, index: number) => number;
-  xScale: Scale<number>;
+  xScale: Scale<X>;
   yScale: Scale<number>;
   radius?: number;
   fill?: string;
@@ -15,14 +15,17 @@ export interface PointMarkOptions<D> {
 }
 
 /** Scatter/dot mark: one circle per datum, in plot-local coordinates. */
-export function pointMark<D>(options: PointMarkOptions<D>): SceneNode {
+export function pointMark<D, X extends string | number = number>(
+  options: PointMarkOptions<D, X>,
+): SceneNode {
   const { data, x, y, xScale, yScale } = options;
   const radius = options.radius ?? 3;
   const fill = options.fill ?? '#4f46e5';
+  const halfBand = xScale.bandwidth() / 2;
 
   const dots = data.map((d, i) =>
     circle({
-      cx: xScale(x(d, i)),
+      cx: xScale(x(d, i)) + halfBand,
       cy: yScale(y(d, i)),
       r: radius,
       fill,
