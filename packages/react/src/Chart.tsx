@@ -161,8 +161,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       }
     });
     return seen;
+    // Categories are derived by calling x(d, i), so the accessor is a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [xScaleType, data, JSON.stringify(xDomain ?? null)]);
+  }, [xScaleType, data, x, JSON.stringify(xDomain ?? null)]);
 
   // Time accepts Date | ISO string | epoch ms; linear, plain numbers.
   const toAxisNumber =

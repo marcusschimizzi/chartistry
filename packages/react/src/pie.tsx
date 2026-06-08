@@ -31,33 +31,41 @@ export function Pie(props: PieProps): null {
   const outerRadius = Math.max(0, Math.min(plot.width, plot.height) / 2 - padding);
   const innerRadius = (props.innerRadius ?? 0) * outerRadius;
 
-  const node = useMemo(
-    () =>
-      pieMark({
-        data,
-        value,
-        cx: plot.width / 2,
-        cy: plot.height / 2,
-        outerRadius,
-        innerRadius,
-        padAngle: props.padAngle,
-        colors: props.colors,
-        id: (d, i) => String(xAccessor(d, i)),
-        label: props.label,
-      }),
-    [
+  const node = useMemo(() => {
+    // Key slices by category so they tween across data changes — but two rows
+    // can share a label, and a duplicate key would let keyed diffing collapse
+    // them into one slice. Disambiguate repeats with an occurrence suffix.
+    const counts = new Map<string, number>();
+    const id = (d: unknown, i: number): string => {
+      const label = String(xAccessor(d, i));
+      const n = counts.get(label) ?? 0;
+      counts.set(label, n + 1);
+      return n === 0 ? label : `${label}~${n}`;
+    };
+    return pieMark({
       data,
       value,
-      plot.width,
-      plot.height,
+      cx: plot.width / 2,
+      cy: plot.height / 2,
       outerRadius,
       innerRadius,
-      props.padAngle,
-      props.colors,
-      props.label,
-      xAccessor,
-    ],
-  );
+      padAngle: props.padAngle,
+      colors: props.colors,
+      id,
+      label: props.label,
+    });
+  }, [
+    data,
+    value,
+    plot.width,
+    plot.height,
+    outerRadius,
+    innerRadius,
+    props.padAngle,
+    props.colors,
+    props.label,
+    xAccessor,
+  ]);
 
   useMark(node);
   return null;
