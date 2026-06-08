@@ -1,0 +1,32 @@
+{
+  "name": "@chartistry/renderer-canvas",
+  "version": "0.0.0",
+  "description": "Canvas 2D renderer backend for Chartistry: paints a scene graph onto an HTML canvas.",
+  "license": "MIT",
+  "author": "Marcus Schimizzi",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chartistry/core": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  }
+}
