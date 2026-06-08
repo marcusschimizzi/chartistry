@@ -1,8 +1,8 @@
 import { area, group, polyline, type SceneNode } from '../scene/nodes';
 import type { Point } from '../types';
-import type { Scale } from '../scales/types';
+import type { Scale, ScaleValue } from '../scales/types';
 
-export interface LineMarkOptions<D, X extends string | number = number> {
+export interface LineMarkOptions<D, X extends ScaleValue = number> {
   data: readonly D[];
   /** Map a datum to its x domain value. */
   x: (datum: D, index: number) => X;
@@ -25,7 +25,7 @@ export interface LineMarkOptions<D, X extends string | number = number> {
  * A line (or filled area) through a data series. Pure: give it data, accessors,
  * and scales, and it returns a scene node in plot-local coordinates.
  */
-export function lineMark<D, X extends string | number = number>(
+export function lineMark<D, X extends ScaleValue = number>(
   options: LineMarkOptions<D, X>,
 ): SceneNode {
   const { data, x, y, xScale, yScale } = options;

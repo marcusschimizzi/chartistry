@@ -36,3 +36,23 @@ export const categorySeries = [
   { key: 'mobile', y: (d: CategoryRow) => d.mobile },
   { key: 'tablet', y: (d: CategoryRow) => d.tablet },
 ];
+
+/** A daily time series starting Jan 1 2024, for the time-scale demo. */
+export interface TimePoint {
+  date: Date;
+  value: number;
+}
+
+export function sampleTimeSeries(days = 120): TimePoint[] {
+  const start = new Date(2024, 0, 1);
+  const out: TimePoint[] = [];
+  let value = 50;
+  for (let i = 0; i < days; i++) {
+    const noise = Math.sin(i * 0.3) * 5 + Math.cos(i * 0.11) * 8;
+    value = Math.max(10, value + noise * 0.4 + (i % 7 === 0 ? 6 : -1));
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    out.push({ date, value: Math.round(value) });
+  }
+  return out;
+}

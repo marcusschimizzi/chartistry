@@ -15,11 +15,12 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  type ActivePoint,
 } from '@chartistry/react';
-import { categoryData, categorySeries, sampleSeries } from './data';
+import { categoryData, categorySeries, sampleSeries, sampleTimeSeries } from './data';
 
 type RendererKind = 'svg' | 'canvas';
-type ChartKind = 'area' | 'multiline' | 'grouped' | 'stacked';
+type ChartKind = 'area' | 'time' | 'multiline' | 'grouped' | 'stacked';
 
 const WIDTH = 720;
 const HEIGHT = 420;
@@ -27,10 +28,13 @@ const MARGIN = { top: 16, right: 20, bottom: 32, left: 44 };
 
 const CHART_OPTIONS: ReadonlyArray<{ value: ChartKind; label: string }> = [
   { value: 'area', label: 'Area' },
+  { value: 'time', label: 'Time series' },
   { value: 'multiline', label: 'Multi-line' },
   { value: 'grouped', label: 'Grouped bars' },
   { value: 'stacked', label: 'Stacked bars' },
 ];
+
+const formatDay = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
 
 export function App() {
   const [rendererKind, setRendererKind] = useState<RendererKind>('svg');
@@ -38,6 +42,8 @@ export function App() {
   const [points, setPoints] = useState(24);
 
   const lineData = useMemo(() => sampleSeries(points), [points]);
+  const timeData = useMemo(() => sampleTimeSeries(Math.round(points * 1.5)), [points]);
+  const showSlider = chartKind === 'area' || chartKind === 'time';
 
   // One renderer instance per kind; flipping it re-mounts the backend in place.
   const renderer = useMemo(
@@ -68,9 +74,11 @@ export function App() {
           ]}
           onChange={setRendererKind}
         />
-        {chartKind === 'area' && (
+        {showSlider && (
           <label className="slider">
-            <span>Points: {points}</span>
+            <span>
+              {chartKind === 'time' ? `Days: ${Math.round(points * 1.5)}` : `Points: ${points}`}
+            </span>
             <input
               type="range"
               min={4}
@@ -89,6 +97,7 @@ export function App() {
           chartKind={chartKind}
           renderer={renderer}
           lineData={lineData}
+          timeData={timeData}
         />
       </section>
 
@@ -105,9 +114,10 @@ interface ChartViewProps {
   chartKind: ChartKind;
   renderer: ReturnType<typeof createSvgRenderer>;
   lineData: ReturnType<typeof sampleSeries>;
+  timeData: ReturnType<typeof sampleTimeSeries>;
 }
 
-function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
+function ChartView({ chartKind, renderer, lineData, timeData }: ChartViewProps) {
   if (chartKind === 'area') {
     return (
       <Chart
@@ -127,6 +137,29 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
         <Crosshair horizontal />
         <Highlight />
         <Tooltip />
+      </Chart>
+    );
+  }
+
+  if (chartKind === 'time') {
+    return (
+      <Chart
+        width={WIDTH}
+        height={HEIGHT}
+        data={timeData}
+        x={(d) => d.date}
+        y={(d) => d.value}
+        xScaleType="time"
+        renderer={renderer}
+        margin={MARGIN}
+      >
+        <Grid axis="y" />
+        <YAxis />
+        <XAxis tickCount={6} />
+        <LineSeries stroke="#6366f1" area />
+        <Crosshair horizontal />
+        <Highlight />
+        <Tooltip>{(active) => <DateTooltip active={active} />}</Tooltip>
       </Chart>
     );
   }
@@ -182,6 +215,41 @@ function ChartView({ chartKind, renderer, lineData }: ChartViewProps) {
       <Tooltip />
       <Legend />
     </Chart>
+  );
+}
+
+function DateTooltip({ active }: { active: ActivePoint }) {
+  const point = active.points[0];
+  return (
+    <div
+      style={{
+        background: 'rgba(15, 23, 42, 0.92)',
+        color: '#f8fafc',
+        borderRadius: 8,
+        padding: '8px 10px',
+        fontSize: 12,
+        lineHeight: 1.5,
+        whiteSpace: 'nowrap',
+        boxShadow: '0 4px 16px rgba(15, 23, 42, 0.25)',
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 4 }}>
+        {formatDay.format(active.xValue as Date)}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 2,
+            background: point?.color,
+            display: 'inline-block',
+          }}
+        />
+        <span style={{ opacity: 0.85 }}>value</span>
+        <span style={{ marginLeft: 'auto', fontWeight: 600 }}>{point?.value}</span>
+      </div>
+    </div>
   );
 }
 

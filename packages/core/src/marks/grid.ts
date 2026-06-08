@@ -1,7 +1,7 @@
 import { group, line, type SceneNode } from '../scene/nodes';
-import type { Scale } from '../scales/types';
+import type { Scale, ScaleValue } from '../scales/types';
 
-export interface GridOptions<T extends string | number> {
+export interface GridOptions<T extends ScaleValue> {
   scale: Scale<T>;
   /** 'x' draws vertical lines at x ticks; 'y' draws horizontal lines. */
   axis: 'x' | 'y';
@@ -15,7 +15,7 @@ export interface GridOptions<T extends string | number> {
 }
 
 /** Background gridlines aligned to a scale's ticks, in plot-local coordinates. */
-export function gridMark<T extends string | number>(options: GridOptions<T>): SceneNode {
+export function gridMark<T extends ScaleValue>(options: GridOptions<T>): SceneNode {
   const { scale, axis, length } = options;
   const color = options.color ?? '#e2e8f0';
   const strokeWidth = options.strokeWidth ?? 1;

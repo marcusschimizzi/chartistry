@@ -1,9 +1,9 @@
 import { group, line, text, type SceneNode, type TextStyle } from '../scene/nodes';
-import type { Scale } from '../scales/types';
+import type { Scale, ScaleValue } from '../scales/types';
 
 export type AxisOrientation = 'bottom' | 'left' | 'top' | 'right';
 
-export interface AxisOptions<T extends string | number> {
+export interface AxisOptions<T extends ScaleValue> {
   scale: Scale<T>;
   orientation: AxisOrientation;
   /**
@@ -39,7 +39,7 @@ const DEFAULTS = {
  * off the scale's own `range`/`ticks`, so it stays correct for both continuous
  * and band scales without special-casing at the call site.
  */
-export function axisMark<T extends string | number>(options: AxisOptions<T>): SceneNode {
+export function axisMark<T extends ScaleValue>(options: AxisOptions<T>): SceneNode {
   const { scale, orientation } = options;
   const tickSize = options.tickSize ?? DEFAULTS.tickSize;
   const tickPadding = options.tickPadding ?? DEFAULTS.tickPadding;
@@ -47,7 +47,9 @@ export function axisMark<T extends string | number>(options: AxisOptions<T>): Sc
   const labelColor = options.labelColor ?? options.color ?? DEFAULTS.labelColor;
   const fontSize = options.fontSize ?? DEFAULTS.fontSize;
   const fontFamily = options.fontFamily ?? DEFAULTS.fontFamily;
-  const format = options.tickFormat ?? ((v: T) => String(v));
+  // Fall back to the scale's own formatter (e.g. a time scale labels dates).
+  const format =
+    options.tickFormat ?? scale.tickFormat?.(options.tickCount) ?? ((v: T) => String(v));
 
   const horizontal = orientation === 'bottom' || orientation === 'top';
   const sign = orientation === 'bottom' || orientation === 'right' ? 1 : -1;
@@ -100,14 +102,14 @@ export function axisMark<T extends string | number>(options: AxisOptions<T>): Sc
 }
 
 /** Convenience wrapper for a bottom (x) axis at the given y offset. */
-export function axisBottom<T extends string | number>(
+export function axisBottom<T extends ScaleValue>(
   options: Omit<AxisOptions<T>, 'orientation'>,
 ): SceneNode {
   return axisMark({ ...options, orientation: 'bottom' });
 }
 
 /** Convenience wrapper for a left (y) axis at the given x offset. */
-export function axisLeft<T extends string | number>(
+export function axisLeft<T extends ScaleValue>(
   options: Omit<AxisOptions<T>, 'orientation'>,
 ): SceneNode {
   return axisMark({ ...options, orientation: 'left' });

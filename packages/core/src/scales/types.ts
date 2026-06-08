@@ -12,9 +12,18 @@ export interface Scale<Domain> {
   ticks(count?: number): Domain[];
   /** Width occupied by a single value. 0 for continuous scales. */
   bandwidth(): number;
+  /**
+   * Optional default formatter for tick labels. An axis uses this when no
+   * explicit format is given, which is how a time scale labels its own ticks
+   * as dates without the call site having to know.
+   */
+  tickFormat?(count?: number): (value: Domain) => string;
 }
 
 export interface ContinuousScale extends Scale<number> {
   /** Map a range position back to a domain value. */
   invert(position: number): number;
 }
+
+/** Domain value kinds a positional scale can carry. */
+export type ScaleValue = string | number | Date;

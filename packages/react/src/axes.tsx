@@ -3,7 +3,7 @@ import { axisBottom, axisLeft, gridMark, type SceneNode } from '@chartistry/core
 import { useChartContext, type XValue } from './context';
 import { useMark } from './use-mark';
 
-export interface AxisProps<V extends string | number = number> {
+export interface AxisProps<V extends string | number | Date = number> {
   tickCount?: number;
   tickFormat?: (value: V) => string;
   color?: string;

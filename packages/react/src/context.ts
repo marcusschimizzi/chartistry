@@ -2,8 +2,8 @@ import { createContext, useContext } from 'react';
 import type { ContinuousScale, Rect, Scale, Size } from '@chartistry/core';
 import type { MarkStore } from './mark-store';
 
-/** A category (band scale) or position (linear scale) value. */
-export type XValue = number | string;
+/** A category (band), position (linear), or instant (time) domain value. */
+export type XValue = number | string | Date;
 
 /** A named value series, used by multi-series marks (bars, multi-line). */
 export interface SeriesSpec<D = never> {

@@ -18,6 +18,7 @@ import {
   nearestIndex,
   seriesExtent,
   stackExtent,
+  timeScale,
   withinPlot,
   type MarginInput,
   type Renderer,
@@ -45,8 +46,8 @@ export interface ChartProps<D> {
   x: (datum: D, index: number) => XValue;
   /** Single-series y accessor. Optional when `series` is provided instead. */
   y?: (datum: D, index: number) => number;
-  /** Horizontal scale kind. Use `band` for bar charts and categorical axes. */
-  xScaleType?: 'linear' | 'band';
+  /** Horizontal scale kind. `band` for categories, `time` for date axes. */
+  xScaleType?: 'linear' | 'band' | 'time';
   /** Named value series for multi-series marks (grouped/stacked bars, lines). */
   series?: ReadonlyArray<SeriesSpec<D>>;
   /** Make the y domain span stacked totals (for <StackedBars>). */
@@ -147,11 +148,19 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
 
   const xScale = useMemo<Scale<XValue>>(() => {
     if (xScaleType === 'band') {
-      return bandScale<XValue>({
-        domain: categories,
+      // Bands are categorical (string | number); widen at the context boundary.
+      return bandScale<string | number>({
+        domain: categories as (string | number)[],
         range: [0, plot.width],
         paddingInner: bandPadding,
-      });
+      }) as unknown as Scale<XValue>;
+    }
+    if (xScaleType === 'time') {
+      // linX0/linX1 are epoch ms (Number(Date)); time scale handles the ticks.
+      return timeScale({
+        domain: [linX0, linX1],
+        range: [0, plot.width],
+      }) as unknown as Scale<XValue>;
     }
     // Linear scale only accepts numbers; widen at the context boundary.
     return linearScale({

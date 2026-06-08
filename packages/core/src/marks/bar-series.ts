@@ -1,7 +1,7 @@
 import { group, rect, type SceneNode } from '../scene/nodes';
 import { bandScale } from '../scales/band';
 import { categoricalColors } from '../scales/ordinal';
-import type { Scale } from '../scales/types';
+import type { Scale, ScaleValue } from '../scales/types';
 import { stack, type StackSeries } from '../data/stack';
 
 /** One value series within a multi-series bar mark. */
@@ -12,7 +12,7 @@ export interface BarSeries<D> {
   color?: string;
 }
 
-export interface MultiBarOptions<D, X extends string | number = string> {
+export interface MultiBarOptions<D, X extends ScaleValue = string> {
   data: readonly D[];
   x: (datum: D, index: number) => X;
   /** A band scale over the categories. */
@@ -27,7 +27,7 @@ export interface MultiBarOptions<D, X extends string | number = string> {
 }
 
 /** Grouped bars: each category's band is split into one sub-bar per series. */
-export function groupedBarMark<D, X extends string | number = string>(
+export function groupedBarMark<D, X extends ScaleValue = string>(
   options: MultiBarOptions<D, X> & { groupPadding?: number },
 ): SceneNode {
   const { data, x, xScale, yScale, series } = options;
@@ -64,7 +64,7 @@ export function groupedBarMark<D, X extends string | number = string>(
 }
 
 /** Stacked bars: series accumulate on top of one another within each category. */
-export function stackedBarMark<D, X extends string | number = string>(
+export function stackedBarMark<D, X extends ScaleValue = string>(
   options: MultiBarOptions<D, X>,
 ): SceneNode {
   const { data, x, xScale, yScale, series } = options;

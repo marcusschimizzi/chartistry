@@ -1,7 +1,7 @@
 import { group, rect, type SceneNode } from '../scene/nodes';
-import type { Scale } from '../scales/types';
+import type { Scale, ScaleValue } from '../scales/types';
 
-export interface BarMarkOptions<D, X extends string | number = string> {
+export interface BarMarkOptions<D, X extends ScaleValue = string> {
   data: readonly D[];
   /** Map a datum to its category (band scale) or position (linear scale). */
   x: (datum: D, index: number) => X;
@@ -26,7 +26,7 @@ export interface BarMarkOptions<D, X extends string | number = string> {
  * the band scale's `bandwidth()`, or from `width` when an x position scale has
  * no bandwidth.
  */
-export function barMark<D, X extends string | number = string>(
+export function barMark<D, X extends ScaleValue = string>(
   options: BarMarkOptions<D, X>,
 ): SceneNode {
   const { data, x, y, xScale, yScale } = options;

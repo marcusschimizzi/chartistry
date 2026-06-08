@@ -101,6 +101,21 @@ Add `<Legend>`, and clicking an item toggles that series off — Chartistry drop
 it from the scales, marks, and tooltip and rescales, while colors stay put. The
 legend renders beneath the chart and reads `series` automatically.
 
+### Time axis
+
+Set `xScaleType="time"` and hand `<Chart>` `Date` values. The time scale maps
+dates linearly by timestamp but picks calendar-aware ticks (every 15 minutes,
+day, month, year, ...) and labels them adaptively, switching granularity as you
+zoom in or out.
+
+```tsx
+<Chart width={720} height={420} data={rows} x={(d) => d.date} y={(d) => d.value} xScaleType="time">
+  <YAxis />
+  <XAxis /> {/* labels itself as dates via the scale's own formatter */}
+  <LineSeries area />
+</Chart>
+```
+
 ### Interaction
 
 Add `<Tooltip>`, `<Crosshair>`, and `<Highlight>` as children. They share a
@@ -172,7 +187,7 @@ renderer (SVG ↔ Canvas) at runtime — all from the same composable spec.
 ## Status
 
 - ✅ Framework-agnostic core (scales, scene graph, marks, layout)
-- ✅ Scales: linear, band, and ordinal/color
+- ✅ Scales: linear, band, ordinal/color, and time (calendar-aware ticks)
 - ✅ Marks: line/area, points, axes, grid, bars, grouped & stacked bars
 - ✅ Multi-series support with a reusable `stack()` data transform
 - ✅ Interaction layer: renderer-agnostic hit-testing, crosshair, highlight, tooltip
