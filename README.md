@@ -1,0 +1,112 @@
+# chartistry
+
+A **composable**, **framework-agnostic**, **renderer-pluggable** charting library.
+
+Chartistry is built around one idea: a chart is a _spec_ that gets turned into a
+renderer-agnostic **scene graph**, which any backend can paint. That single seam
+is what makes the same chart render identically through SVG, Canvas, or anything
+else — and what lets thin framework adapters sit on top without re-implementing
+the chart logic.
+
+```
+   data ──▶ scales ──▶ marks ──▶ scene graph ──▶ renderer ──▶ pixels
+                         ▲                            ▲
+                  composable pieces            swappable backend
+```
+
+## Packages
+
+| Package                       | Responsibility                                                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `@chartistry/core`            | Framework-agnostic core: scales, scene graph, marks, chart layout, and the `Renderer` interface. No DOM, no framework. |
+| `@chartistry/renderer-svg`    | Paints a scene graph into SVG DOM. The inspectable, CSS-friendly default.                                              |
+| `@chartistry/renderer-canvas` | Paints the same scene graph onto a Canvas 2D context. For larger datasets.                                             |
+| `@chartistry/react`           | Composable React components (`<Chart>`, `<LineSeries>`, `<XAxis>`, …) over the core.                                   |
+
+## Quick look
+
+### Vanilla core (works anywhere)
+
+```ts
+import { createChart, linearScale, extent, axisLeft, axisBottom, lineMark } from '@chartistry/core';
+import { createSvgRenderer } from '@chartistry/renderer-svg';
+
+const data = [
+  { x: 0, y: 3 },
+  { x: 1, y: 7 },
+  { x: 2, y: 4 },
+];
+
+const chart = createChart({ width: 640, height: 360 });
+const x = linearScale({ domain: extent(data.map((d) => d.x)), range: [0, chart.plot.width] });
+const y = linearScale({
+  domain: extent(data.map((d) => d.y)),
+  range: [chart.plot.height, 0],
+  nice: true,
+});
+
+const scene = chart.compose([
+  axisLeft({ scale: y }),
+  axisBottom({ scale: x, offset: chart.plot.height }),
+  lineMark({ data, x: (d) => d.x, y: (d) => d.y, xScale: x, yScale: y }),
+]);
+
+const handle = createSvgRenderer().mount(document.querySelector('#app')!, chart.size);
+handle.render(scene);
+```
+
+Swap `createSvgRenderer()` for `createCanvasRenderer()` and nothing else changes.
+
+### React adapter
+
+```tsx
+import { Chart, Grid, LineSeries, Points, XAxis, YAxis } from '@chartistry/react';
+
+<Chart width={640} height={360} data={data} x={(d) => d.x} y={(d) => d.y}>
+  <Grid axis="y" />
+  <YAxis />
+  <XAxis />
+  <LineSeries stroke="#6366f1" area />
+  <Points />
+</Chart>;
+```
+
+Pass `renderer={createCanvasRenderer()}` to `<Chart>` to switch backends.
+
+## Development
+
+This is a [pnpm](https://pnpm.io) workspace.
+
+```bash
+pnpm install        # install everything
+pnpm dev            # run the interactive playground (Vite)
+pnpm test           # run the unit tests (Vitest)
+pnpm typecheck      # type-check every package
+pnpm lint           # lint
+pnpm build          # build all publishable packages
+```
+
+The **playground** (`/playground`) is the living demo: it renders one line chart
+and lets you flip the renderer (SVG ↔ Canvas) and the API (React ↔ vanilla core)
+at runtime to prove they share a single chart spec.
+
+## Status
+
+Early days — this is the first end-to-end milestone:
+
+- ✅ Framework-agnostic core (scales, scene graph, marks, layout)
+- ✅ Pluggable renderer interface with SVG and Canvas backends
+- ✅ React adapter with composable components
+- ✅ Playground proving one spec across renderers and APIs
+
+### Roadmap ideas
+
+- More scales (time, log, ordinal/color) and marks (bars, stacks, multi-series)
+- Keyed scene diffing in the SVG renderer; transitions
+- Interaction layer (tooltips, hover, crosshair) over the scene graph
+- Accessibility (ARIA, keyboard) baked into the scene model
+- Additional adapters (Vue, Svelte, Web Components)
+
+## License
+
+MIT © Marcus Schimizzi
