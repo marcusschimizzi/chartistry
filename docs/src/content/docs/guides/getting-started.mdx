@@ -1,0 +1,75 @@
+---
+title: Getting started
+description: Install Chartistry and render your first chart.
+---
+
+import BarChartExample from '../../../components/examples/BarChartExample.tsx';
+
+Chartistry is published as a small set of packages: a framework-agnostic core, one
+or more renderer backends, and (optionally) a React adapter.
+
+## Install
+
+For a React app using the SVG renderer:
+
+```bash
+npm install @chartistry/react @chartistry/core @chartistry/renderer-svg
+```
+
+`react` and `react-dom` (>=18) are peer dependencies of `@chartistry/react`.
+
+## Your first chart
+
+Compose a chart from declarative pieces — axes, a `<Bars>` mark, and a tooltip.
+Child marks describe _what_ to draw; the renderer decides _how_.
+
+```tsx
+import { Chart, Bars, XAxis, YAxis, Tooltip } from '@chartistry/react';
+
+const data = [
+  { name: 'Mon', value: 32 },
+  { name: 'Tue', value: 58 },
+  { name: 'Wed', value: 41 },
+  { name: 'Thu', value: 67 },
+  { name: 'Fri', value: 49 },
+];
+
+export function Example() {
+  return (
+    <Chart
+      width={520}
+      height={300}
+      data={data}
+      x={(d) => d.name}
+      y={(d) => d.value}
+      xScaleType="band"
+      title="Weekly visits"
+    >
+      <YAxis />
+      <XAxis />
+      <Bars />
+      <Tooltip />
+    </Chart>
+  );
+}
+```
+
+That code renders this — a real, interactive chart (hover a bar, or focus it and use
+the arrow keys):
+
+<BarChartExample client:load />
+
+## Switching renderers
+
+The chart above uses the default SVG renderer. To paint onto a `<canvas>` instead,
+install `@chartistry/renderer-canvas` and pass its renderer to `<Chart>`:
+
+```tsx
+import { createCanvasRenderer } from '@chartistry/renderer-canvas';
+
+<Chart /* ...same props... */ renderer={createCanvasRenderer()}>
+  {/* ...same marks... */}
+</Chart>;
+```
+
+The same scene graph paints identically on either backend.

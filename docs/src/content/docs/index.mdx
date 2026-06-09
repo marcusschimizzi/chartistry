@@ -1,0 +1,42 @@
+---
+title: Chartistry
+description: A composable, framework-agnostic, renderer-pluggable charting library for the web.
+template: splash
+hero:
+  tagline: A chart is a spec that becomes a renderer-agnostic scene graph, which any backend can paint.
+  actions:
+    - text: Getting started
+      link: guides/getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/marcusschimizzi/chartistry
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Chartistry
+
+<CardGrid stagger>
+  <Card title="Composable" icon="puzzle">
+    Build charts by composing small pieces — scales, marks, axes, legends, and
+    interactions — instead of configuring a monolith.
+  </Card>
+  <Card title="Framework-agnostic core" icon="setting">
+    The core has no DOM and no framework dependency. A thin React adapter sits
+    on top; other adapters can too.
+  </Card>
+  <Card title="Pluggable renderers" icon="laptop">
+    The same scene graph paints identically through an SVG or a Canvas backend.
+    Swap them at runtime.
+  </Card>
+  <Card title="Accessible by default" icon="approve-check">
+    Charts ship with a figure role, a hidden data table, keyboard navigation,
+    and a live-region announcer.
+  </Card>
+</CardGrid>
+
+```
+data ──▶ scales ──▶ marks ──▶ scene graph ──▶ renderer ──▶ pixels
+```

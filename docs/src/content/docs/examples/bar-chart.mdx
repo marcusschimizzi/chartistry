@@ -1,0 +1,37 @@
+---
+title: Bar chart
+description: A live, interactive bar chart built with Chartistry.
+---
+
+import BarChartExample from '../../../components/examples/BarChartExample.tsx';
+
+A categorical bar chart with axes and a tooltip. It's interactive out of the box —
+hover a bar, or give the chart keyboard focus and use the arrow keys; the value is
+announced for screen readers.
+
+<BarChartExample client:load />
+
+## How it's built
+
+```tsx
+import { Chart, Bars, XAxis, YAxis, Tooltip } from '@chartistry/react';
+
+<Chart
+  width={520}
+  height={300}
+  data={data}
+  x={(d) => d.name}
+  y={(d) => d.value}
+  xScaleType="band"
+  title="Weekly visits"
+>
+  <YAxis />
+  <XAxis />
+  <Bars />
+  <Tooltip />
+</Chart>;
+```
+
+`xScaleType="band"` lays the categories out as evenly padded bands. `<Bars>` reads the
+chart's `x`/`y` accessors and the band scale to size each bar; `<Tooltip>` measures its
+own panel so it never spills off the chart.
