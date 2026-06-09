@@ -1,0 +1,28 @@
+{
+  "name": "@chartistry/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/react": "^5.0.7",
+    "@astrojs/starlight": "^0.39.3",
+    "@chartistry/core": "workspace:*",
+    "@chartistry/react": "workspace:*",
+    "@chartistry/renderer-canvas": "workspace:*",
+    "astro": "^6.4.5",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
+  }
+}

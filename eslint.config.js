@@ -4,7 +4,8 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/*.tsbuildinfo'],
+    // The docs site (Astro/MDX) is validated by its own `astro check`/`astro build`.
+    ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**', '**/*.tsbuildinfo', 'docs/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
