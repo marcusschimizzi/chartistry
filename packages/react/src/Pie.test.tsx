@@ -129,6 +129,52 @@ describe('Pie', () => {
     expect(sliceA().getAttribute('d')).toBe(before);
   });
 
+  it('pops the keyboard-focused slice and announces it', async () => {
+    const data = [
+      { name: 'a', v: 1 },
+      { name: 'b', v: 1 },
+    ];
+    const { container } = render(
+      <Chart
+        width={120}
+        height={120}
+        margin={0}
+        data={data}
+        x={(d) => d.name}
+        y={(d) => d.v}
+        renderer={createSvgRenderer({ transition: false })}
+        title="P"
+      >
+        <Pie activeOffset={8} />
+      </Chart>,
+    );
+    await flush();
+
+    const paths = () =>
+      Array.from(container.querySelectorAll('path')).map((p) => p.getAttribute('d'));
+    const rest = paths();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    const live = container.querySelector('[aria-live="polite"]') as HTMLElement;
+
+    // Arrow to the first slice: it pops (no pointer involved) and is announced.
+    fireEvent.keyDown(app, { key: 'ArrowRight' });
+    await flush();
+    expect(paths()[0]).not.toBe(rest[0]);
+    expect(paths()[1]).toBe(rest[1]); // the other slice stays put
+    expect(live.textContent).toContain('a');
+
+    // Arrow to the second slice: the pop moves with focus.
+    fireEvent.keyDown(app, { key: 'ArrowRight' });
+    await flush();
+    expect(paths()[0]).toBe(rest[0]); // first slice released
+    expect(paths()[1]).not.toBe(rest[1]); // second slice now popped
+
+    // Escape clears the focus pop.
+    fireEvent.keyDown(app, { key: 'Escape' });
+    await flush();
+    expect(paths()).toEqual(rest);
+  });
+
   it('misses the donut hole — no slice pops when the pointer is in the center', async () => {
     const data = [
       { name: 'a', v: 1 },
@@ -159,5 +205,43 @@ describe('Pie', () => {
     movePointer(app, 60, 60);
     await flush();
     expect(paths()).toEqual(before);
+  });
+
+  it('does not pop on a hole/gap miss even when cartesian active is set', async () => {
+    // Numeric x means the Chart's cartesian nearestIndex resolves a datum on
+    // pointer move; the pie pop must still respect the angular miss, not fall
+    // back to that index.
+    const data = [{ v: 1 }, { v: 1 }];
+    const { container } = render(
+      <Chart
+        width={120}
+        height={120}
+        margin={0}
+        data={data}
+        x={(_d, i) => i}
+        y={(d) => d.v}
+        renderer={createSvgRenderer({ transition: false })}
+        title="P"
+      >
+        <Pie innerRadius={0.5} activeOffset={8} />
+      </Chart>,
+    );
+    await flush();
+
+    const paths = () =>
+      Array.from(container.querySelectorAll('path')).map((p) => p.getAttribute('d'));
+    const before = paths();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+
+    // Pointer in the donut hole: cartesian active is set, but the pie sees a
+    // miss and pops nothing.
+    movePointer(app, 60, 60);
+    await flush();
+    expect(paths()).toEqual(before);
+
+    // Pointer on the ring still pops its slice, proving hit-testing is live.
+    movePointer(app, 90, 60);
+    await flush();
+    expect(paths()[0]).not.toBe(before[0]);
   });
 });
