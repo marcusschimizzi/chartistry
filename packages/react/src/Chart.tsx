@@ -53,6 +53,10 @@ export interface ChartProps<D> {
   y?: (datum: D, index: number) => number;
   /** Horizontal scale kind. `band` for categories, `time` for date axes. */
   xScaleType?: 'linear' | 'band' | 'time';
+  /** For a time axis, snap ticks and format labels in UTC instead of local time. */
+  utc?: boolean;
+  /** For a time axis, BCP-47 locale(s) for tick labels (uses `Intl`). */
+  locale?: string | string[];
   /**
    * Lay the value axis horizontally (categories on y). Used for horizontal bars.
    * `x` stays the category accessor and `y` the value accessor either way.
@@ -106,6 +110,8 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     x = (_d, i) => i,
     y,
     xScaleType = 'linear',
+    utc = false,
+    locale,
     orientation = 'vertical',
     series,
     stackY = false,
@@ -190,11 +196,27 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     }
     if (xScaleType === 'time') {
       // linX0/linX1 are epoch ms (Number(Date)); time scale handles the ticks.
-      return timeScale({ domain: [linX0, linX1], range }) as unknown as Scale<XValue>;
+      return timeScale({
+        domain: [linX0, linX1],
+        range,
+        utc,
+        ...(locale !== undefined ? { locale } : {}),
+      }) as unknown as Scale<XValue>;
     }
     // Linear scale only accepts numbers; widen at the context boundary.
     return linearScale({ domain: [linX0, linX1], range }) as unknown as Scale<XValue>;
-  }, [xScaleType, categories, plot.width, plot.height, horizontal, bandPadding, linX0, linX1]);
+  }, [
+    xScaleType,
+    categories,
+    plot.width,
+    plot.height,
+    horizontal,
+    bandPadding,
+    linX0,
+    linX1,
+    utc,
+    locale,
+  ]);
 
   // --- Series resolution + legend visibility. ------------------------------
   const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(() => new Set());
