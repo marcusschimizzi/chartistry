@@ -145,7 +145,12 @@ function ChartView({ chartKind, renderer, lineData, timeData, donut }: ChartView
         description="Share of page views by browser."
         xLabel="Browser"
       >
-        <Pie innerRadius={donut} padAngle={0.015} label={(d) => (d as { name: string }).name} />
+        <Pie
+          innerRadius={donut}
+          padAngle={0.015}
+          labelPlacement="outside"
+          label={(d) => (d as { name: string }).name}
+        />
       </Chart>
     );
   }

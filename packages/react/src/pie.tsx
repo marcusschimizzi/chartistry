@@ -14,8 +14,18 @@ export interface PieProps {
   colors?: readonly string[];
   /** Padding between the pie and the plot edge, in pixels. */
   padding?: number;
-  /** Optional label drawn at each slice centroid. */
+  /** Optional label for each slice. */
   label?: (datum: unknown, index: number) => string;
+  /** Place labels at the slice centroid (`inside`, default) or `outside` with a leader line. */
+  labelPlacement?: 'inside' | 'outside';
+  /** Slices thinner than this (radians) are left unlabeled. Defaults to an adaptive value. */
+  minLabelAngle?: number;
+  /** Label font size in px. Defaults to 12. */
+  labelFontSize?: number;
+  /** Label text color. */
+  labelColor?: string;
+  /** Leader line color for outside labels. */
+  leaderColor?: string;
   /** Pop the focused slice (pointer hover or keyboard) outward. Default true. */
   interactive?: boolean;
   /** Pixels to pop the focused slice outward. Defaults to 6. */
@@ -49,9 +59,13 @@ export function Pie(props: PieProps): null {
   const interactive = props.interactive ?? true;
   const activeOffset = props.activeOffset ?? 6;
 
+  const labelPlacement = props.labelPlacement ?? 'inside';
+  // Outside labels live beyond the arc, so reserve room for the leader + text.
+  const labelReserve = props.label && labelPlacement === 'outside' ? 48 : 0;
+
   const cx = plot.width / 2;
   const cy = plot.height / 2;
-  const outerRadius = Math.max(0, Math.min(plot.width, plot.height) / 2 - padding);
+  const outerRadius = Math.max(0, Math.min(plot.width, plot.height) / 2 - padding - labelReserve);
   const innerRadius = (props.innerRadius ?? 0) * outerRadius;
 
   // The angular spans used for both rendering and hit-testing. pie() is pure, so
@@ -127,6 +141,11 @@ export function Pie(props: PieProps): null {
       colors: props.colors,
       id,
       label: props.label,
+      labelPlacement,
+      ...(props.minLabelAngle !== undefined ? { minLabelAngle: props.minLabelAngle } : {}),
+      ...(props.labelFontSize !== undefined ? { labelFontSize: props.labelFontSize } : {}),
+      ...(props.labelColor !== undefined ? { labelColor: props.labelColor } : {}),
+      ...(props.leaderColor !== undefined ? { leaderColor: props.leaderColor } : {}),
       ...(focusIndex !== null ? { activeIndex: focusIndex, activeOffset } : {}),
     });
   }, [
@@ -139,6 +158,11 @@ export function Pie(props: PieProps): null {
     props.padAngle,
     props.colors,
     props.label,
+    labelPlacement,
+    props.minLabelAngle,
+    props.labelFontSize,
+    props.labelColor,
+    props.leaderColor,
     xAccessor,
     focusIndex,
     activeOffset,
