@@ -1,9 +1,27 @@
 {
   "name": "@chartistry/renderer-canvas",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Canvas 2D renderer backend for Chartistry: paints a scene graph onto an HTML canvas.",
   "license": "MIT",
   "author": "Marcus Schimizzi",
+  "homepage": "https://github.com/marcusschimizzi/chartistry#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcusschimizzi/chartistry.git",
+    "directory": "packages/renderer-canvas"
+  },
+  "bugs": "https://github.com/marcusschimizzi/chartistry/issues",
+  "keywords": [
+    "chart",
+    "charting",
+    "canvas",
+    "renderer",
+    "data-visualization",
+    "visualization"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",

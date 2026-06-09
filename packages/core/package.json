@@ -1,9 +1,29 @@
 {
   "name": "@chartistry/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Framework-agnostic, renderer-pluggable core for the Chartistry charting library: scales, scene graph, marks, and chart composition.",
   "license": "MIT",
   "author": "Marcus Schimizzi",
+  "homepage": "https://github.com/marcusschimizzi/chartistry#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcusschimizzi/chartistry.git",
+    "directory": "packages/core"
+  },
+  "bugs": "https://github.com/marcusschimizzi/chartistry/issues",
+  "keywords": [
+    "chart",
+    "charts",
+    "charting",
+    "data-visualization",
+    "dataviz",
+    "visualization",
+    "scene-graph",
+    "scales"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
