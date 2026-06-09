@@ -1,4 +1,11 @@
-import { useMemo, type CSSProperties, type ReactNode } from 'react';
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { circle, crosshairMark, group, type SceneNode } from '@chartistry/core';
 import { useChartContext, type ActivePoint } from './context';
 import { useMark } from './use-mark';
@@ -86,42 +93,86 @@ export interface TooltipProps {
   offset?: number;
 }
 
+/** A measured size, in pixels. */
+interface Box {
+  width: number;
+  height: number;
+}
+
+/**
+ * Decide the tooltip's top-left given the anchor point, its *measured* size, and
+ * the container bounds. It prefers a side (above for vertical charts, right for
+ * horizontal), flips to the opposite side when the preferred one would overflow,
+ * and finally clamps to the container so the panel is always fully visible —
+ * exact, rather than the old midpoint guess that ignored the panel's real size.
+ */
+export function placeTooltip(
+  anchor: { x: number; y: number },
+  box: Box,
+  offset: number,
+  orientation: 'vertical' | 'horizontal',
+  bounds: Box,
+): { left: number; top: number } {
+  let left: number;
+  let top: number;
+
+  if (orientation === 'horizontal') {
+    // Prefer the right of the point; flip left only if the panel would overflow.
+    const right = anchor.x + offset;
+    left = right + box.width > bounds.width ? anchor.x - offset - box.width : right;
+    top = anchor.y - box.height / 2;
+  } else {
+    // Prefer above the point; flip below only if the panel would overflow the top.
+    const above = anchor.y - offset - box.height;
+    top = above < 0 ? anchor.y + offset : above;
+    left = anchor.x - box.width / 2;
+  }
+
+  // Keep the panel inside the container on the cross axis (and after any flip).
+  left = clamp(left, 0, Math.max(0, bounds.width - box.width));
+  top = clamp(top, 0, Math.max(0, bounds.height - box.height));
+  return { left, top };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
 /**
  * An HTML overlay positioned over the active datum. Kept as DOM (not a scene
  * node) so content is freely styleable and accessible, and so it works the
- * same regardless of which renderer painted the chart underneath. It sits above
- * the data for vertical charts and beside it for horizontal ones.
+ * same regardless of which renderer painted the chart underneath. It measures
+ * its own rendered size and places itself so it never spills off the chart —
+ * above the data for vertical charts, beside it for horizontal ones.
  */
 export function Tooltip(props: TooltipProps): ReactNode {
-  const { active, plot } = useChartContext();
+  const { active, plot, size } = useChartContext();
+  const ref = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<Box>({ width: 0, height: 0 });
+
+  // Measure the panel before the browser paints, so placement uses its true
+  // size. Re-runs when the content can change (the active point, or a custom
+  // renderer); the equality guard stops the setBox from looping.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const next = { width: el.offsetWidth, height: el.offsetHeight };
+    setBox((prev) => (prev.width === next.width && prev.height === next.height ? prev : next));
+  }, [active, props.children]);
+
   if (!active || active.points.length === 0) return null;
 
   const offset = props.offset ?? 12;
   const value = valueGuide(active);
-
-  // Flip the tooltip to the inner side when the bar/point reaches the far edge,
-  // so a long bar (or a high value) doesn't push the panel off the plot.
-  const wrapperStyle: CSSProperties =
+  // Anchor at the active point, in host (chart container) coordinates.
+  const anchor =
     active.orientation === 'horizontal'
-      ? (() => {
-          const flip = value > plot.width / 2;
-          return {
-            left: value + plot.x + (flip ? -offset : offset),
-            top: active.category + plot.y,
-            transform: flip ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
-          };
-        })()
-      : (() => {
-          const flip = value < 60;
-          return {
-            left: active.category + plot.x,
-            top: value + plot.y + (flip ? offset : -offset),
-            transform: flip ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
-          };
-        })();
+      ? { x: value + plot.x, y: active.category + plot.y }
+      : { x: active.category + plot.x, y: value + plot.y };
+  const { left, top } = placeTooltip(anchor, box, offset, active.orientation, size);
 
   return (
-    <div style={{ position: 'absolute', pointerEvents: 'none', zIndex: 2, ...wrapperStyle }}>
+    <div ref={ref} style={{ position: 'absolute', pointerEvents: 'none', zIndex: 2, left, top }}>
       {props.children ? props.children(active) : <DefaultTooltip active={active} />}
     </div>
   );
