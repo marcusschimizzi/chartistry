@@ -1,0 +1,132 @@
+---
+import Frame from './Frame.astro';
+import MiniBars from './MiniBars.tsx';
+import MiniArea from './MiniArea.tsx';
+import MiniPie from './MiniPie.tsx';
+import MiniLines from './MiniLines.tsx';
+import MiniStacked from './MiniStacked.tsx';
+---
+
+<section class="hero">
+  <div class="hero__intro">
+    <p class="hero__eyebrow">Open-source charting</p>
+    <h1 class="hero__title">Charts worth framing.</h1>
+    <p class="hero__tagline">
+      Chartistry is a composable, framework-agnostic, renderer-pluggable charting library. Every
+      piece on this wall is a live chart — drawn by the library itself, right here in your browser.
+    </p>
+    <div class="hero__cta">
+      <a class="hero__btn hero__btn--primary" href="guides/getting-started/">Getting started →</a>
+      <a class="hero__btn" href="https://github.com/marcusschimizzi/chartistry">View on GitHub</a>
+    </div>
+  </div>
+
+  <div class="gallery" aria-hidden="true">
+    <Frame title="Composition in Indigo" variant="gold" rotate={-2}>
+      <MiniBars client:visible />
+    </Frame>
+    <Frame title="Tidal Study" variant="black" rotate={1.5}>
+      <MiniArea client:visible />
+    </Frame>
+    <Frame title="Wheel of Hue" variant="wood" rotate={-2.5}>
+      <MiniPie client:visible />
+    </Frame>
+    <Frame title="Crossing Paths" variant="black" rotate={2}>
+      <MiniLines client:visible />
+    </Frame>
+    <Frame title="Four Quarters" variant="gold" rotate={-1}>
+      <MiniStacked client:visible />
+    </Frame>
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(260px, 380px) 1fr;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
+    align-items: center;
+    margin: 0 0 2.5rem;
+    padding: clamp(1.5rem, 4vw, 3.25rem);
+    border-radius: 18px;
+    /* A warm gallery wall: soft top light fading into greige plaster. */
+    background:
+      radial-gradient(130% 90% at 50% -10%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 55%),
+      linear-gradient(180deg, #efe9df 0%, #e6dccb 100%);
+    border-top: 3px solid rgba(15, 23, 42, 0.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+
+  .hero__eyebrow {
+    margin: 0 0 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #9a7b3f;
+  }
+  .hero__title {
+    margin: 0 0 1rem;
+    font-size: clamp(2.1rem, 5vw, 3.4rem);
+    line-height: 1.04;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: #1f2433;
+  }
+  .hero__tagline {
+    margin: 0 0 1.75rem;
+    font-size: clamp(1rem, 1.4vw, 1.12rem);
+    line-height: 1.6;
+    color: #4a536a;
+  }
+  .hero__cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .hero__btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.6rem 1.1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: 1px solid rgba(15, 23, 42, 0.16);
+    color: #1f2433;
+    background: rgba(255, 255, 255, 0.7);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      background 0.2s ease;
+  }
+  .hero__btn--primary {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #ffffff;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+  }
+  .hero__btn:hover {
+    transform: translateY(-2px);
+  }
+
+  .gallery {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(1rem, 2.5vw, 2rem);
+  }
+
+  @media (max-width: 800px) {
+    .hero {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    .hero__cta {
+      justify-content: center;
+    }
+  }
+</style>

@@ -1,0 +1,81 @@
+---
+interface Props {
+  /** The museum placard caption shown beneath the frame. */
+  title: string;
+  /** Frame finish. */
+  variant?: 'gold' | 'wood' | 'black';
+  /** Hand-hung tilt, in degrees. */
+  rotate?: number;
+}
+const { title, variant = 'gold', rotate = 0 } = Astro.props;
+---
+
+<figure class:list={['frame', `frame--${variant}`]} style={`--rotate:${rotate}deg`}>
+  <div class="frame__mat">
+    <div class="frame__art"><slot /></div>
+  </div>
+  <figcaption class="frame__label">{title}</figcaption>
+</figure>
+
+<style>
+  .frame {
+    --rotate: 0deg;
+    margin: 0;
+    width: max-content;
+    transform: rotate(var(--rotate));
+    transition:
+      transform 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+  .frame:hover {
+    transform: rotate(0deg) translateY(-6px) scale(1.02);
+    z-index: 2;
+  }
+
+  /* The moulding: a gradient bevel reads as a gilded / wooden / black frame. */
+  .frame__mat {
+    padding: clamp(10px, 1.4vw, 18px);
+    border-radius: 3px;
+    box-shadow:
+      0 22px 48px rgba(15, 23, 42, 0.32),
+      0 6px 14px rgba(15, 23, 42, 0.22);
+  }
+  .frame--gold .frame__mat {
+    background: linear-gradient(135deg, #e7cd84 0%, #b3863a 28%, #f3e2a8 52%, #9c7322 76%, #d9b566 100%);
+  }
+  .frame--wood .frame__mat {
+    background: linear-gradient(135deg, #8a5a32 0%, #5c3a1e 50%, #7a4e2a 100%);
+  }
+  .frame--black .frame__mat {
+    background: linear-gradient(135deg, #3a3a40 0%, #141417 55%, #2c2c31 100%);
+  }
+
+  /* The mat: a cream board with an inset bevel, then the white "canvas". */
+  .frame__art {
+    background: #ffffff;
+    padding: clamp(10px, 1.2vw, 16px);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow:
+      inset 0 0 0 8px #fbf7ee,
+      inset 0 1px 5px rgba(15, 23, 42, 0.18);
+    line-height: 0;
+  }
+
+  .frame__label {
+    margin-top: 12px;
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    color: var(--sl-color-gray-3, #64748b);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .frame,
+    .frame:hover {
+      transition: none;
+      transform: rotate(var(--rotate));
+    }
+  }
+</style>
