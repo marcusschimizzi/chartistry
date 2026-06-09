@@ -95,3 +95,71 @@ describe('formatTime', () => {
     expect(formatTime(date('2024-04-05T13:30:45'))).toBe(':45');
   });
 });
+
+describe('timeScale utc', () => {
+  it('snaps ticks to UTC day boundaries regardless of host time zone', () => {
+    const scale = timeScale({
+      domain: [Date.UTC(2024, 2, 1), Date.UTC(2024, 2, 8)],
+      range: [0, 700],
+      utc: true,
+    });
+    const ticks = scale.ticks(7);
+    expect(ticks.length).toBeGreaterThanOrEqual(6);
+    for (const t of ticks) {
+      expect(t.getUTCHours()).toBe(0);
+      expect(t.getUTCMinutes()).toBe(0);
+    }
+  });
+
+  it('nices the domain to UTC boundaries', () => {
+    const scale = timeScale({
+      domain: [Date.UTC(2024, 2, 3, 5, 30), Date.UTC(2024, 2, 6, 18, 10)],
+      range: [0, 100],
+      utc: true,
+      nice: true,
+    });
+    const lo = scale.domain[0]!;
+    const hi = scale.domain[1]!;
+    expect(lo.getUTCHours()).toBe(0);
+    expect(hi.getUTCHours()).toBe(0);
+  });
+
+  it('formats labels in UTC', () => {
+    const scale = timeScale({
+      domain: [Date.UTC(2024, 3, 1), Date.UTC(2024, 6, 1)],
+      range: [0, 1],
+      utc: true,
+    });
+    // A UTC-midnight first-of-month reads as the month name, in UTC fields.
+    expect(scale.tickFormat()(new Date(Date.UTC(2024, 3, 1)))).toBe('Apr');
+    expect(scale.tickFormat()(new Date(Date.UTC(2024, 3, 5)))).toBe('Apr 5');
+  });
+});
+
+describe('timeScale locale', () => {
+  it('labels ticks via Intl in the requested locale', () => {
+    const scale = timeScale({
+      domain: [Date.UTC(2024, 3, 1), Date.UTC(2024, 6, 1)],
+      range: [0, 1],
+      utc: true,
+      locale: 'fr-FR',
+    });
+    const label = scale.tickFormat()(new Date(Date.UTC(2024, 3, 5)));
+    const expected = new Intl.DateTimeFormat('fr-FR', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(2024, 3, 5)));
+    expect(label).toBe(expected);
+    expect(label).not.toBe('Apr 5'); // genuinely localized, not the English default
+  });
+
+  it('still defaults to compact English without a locale', () => {
+    const scale = timeScale({
+      domain: [Date.UTC(2024, 3, 1), Date.UTC(2024, 6, 1)],
+      range: [0, 1],
+      utc: true,
+    });
+    expect(scale.tickFormat()(new Date(Date.UTC(2024, 3, 5)))).toBe('Apr 5');
+  });
+});
