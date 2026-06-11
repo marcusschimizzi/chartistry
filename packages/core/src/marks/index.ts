@@ -7,3 +7,4 @@ export * from './axis';
 export * from './grid';
 export * from './crosshair';
 export * from './size-legend';
+export * from './reference';

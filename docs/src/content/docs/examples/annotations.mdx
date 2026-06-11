@@ -1,0 +1,40 @@
+---
+title: Annotations
+description: Reference lines, shaded bands, and point callouts that compose into any chart.
+---
+
+import AnnotationsExample from '../../../components/examples/AnnotationsExample.tsx';
+
+Annotations are overlays that explain a chart in its own coordinate space. They compose into
+**any** chart type — here a line chart gains a shaded **band**, a **reference line**, and a
+**point callout**.
+
+<AnnotationsExample client:load />
+
+## The pieces
+
+- **`<ReferenceBand>`** shades a value range (`y={[40, 60]}`) or a category range
+  (`x={[from, to]}`) — a target band, a control range, a highlighted era.
+- **`<ReferenceLine>`** draws a line at a value (`y={75}`, a threshold or goal) or a
+  category position (`x={...}`), with an optional label.
+- **`<Annotation>`** points a labeled callout at a specific datum (`x`/`y`), with a
+  connector you can angle via `dx`/`dy`.
+
+All three are orientation-aware (they follow `orientation="horizontal"`) and render through
+the scene graph, so they paint on both the SVG and Canvas backends.
+
+```tsx
+import { Chart, LineSeries, ReferenceLine, ReferenceBand, Annotation } from '@chartistry/react';
+
+<Chart width={640} height={360} data={data} x={(d) => d.month} y={(d) => d.value} yDomain={[0, 100]}>
+  <Grid />
+  <ReferenceBand y={[40, 60]} label="Healthy range" fill="#10b981" opacity={0.1} />
+  <YAxis />
+  <XAxis />
+  <ReferenceLine y={75} label="Target" color="#ef4444" />
+  <LineSeries area />
+  <Annotation x={5} y={82} label="Record high" dx={-14} dy={-16} />
+</Chart>;
+```
+
+Order is paint order: put bands behind the data and reference lines / callouts on top.
