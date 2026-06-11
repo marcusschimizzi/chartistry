@@ -52,7 +52,12 @@ export function Bubbles(props: BubblesProps): null {
 
   const radius = useMemo(() => {
     if (!size) return undefined;
-    const domain = sizeDomain ?? extent(data.map((d, i) => size(d, i)));
+    // Anchor the size domain at zero so bubble AREA stays proportional to value.
+    // A [min, max] domain would map the smallest value to the minimum radius and
+    // break that proportionality; sizeRange's lower bound still keeps the
+    // smallest bubbles visible.
+    const max = extent(data.map((d, i) => size(d, i)))[1];
+    const domain: [number, number] = sizeDomain ?? [0, max];
     const scale = sqrtScale({ domain, range: sizeRange, clamp: true });
     return (d: unknown, i: number) => scale(size(d, i));
   }, [size, data, sizeDomain, sizeRange]);
