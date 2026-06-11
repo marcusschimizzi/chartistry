@@ -20,7 +20,7 @@ import {
   nearestIndex,
   nearestPoint,
   seriesExtent,
-  stackExtent,
+  stackedAreaExtent,
   timeScale,
   withinPlot,
   type ContinuousScale,
@@ -65,8 +65,11 @@ export interface ChartProps<D> {
   orientation?: 'vertical' | 'horizontal';
   /** Named value series for multi-series marks (grouped/stacked bars, lines). */
   series?: ReadonlyArray<SeriesSpec<D>>;
-  /** Make the y domain span stacked totals (for <StackedBars>). */
-  stackY?: boolean;
+  /**
+   * Make the y domain span stacked totals (for <StackedBars>/<StackedArea>).
+   * Pass `'silhouette'` for a centered, streamgraph value domain.
+   */
+  stackY?: boolean | 'silhouette';
   margin?: MarginInput;
   /** Override the auto-computed x domain (linear) or category order (band). */
   xDomain?: readonly XValue[];
@@ -269,7 +272,8 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     if (yDomain) return yDomain;
     const rows = data as readonly unknown[];
     if (visibleSeries.length > 0) {
-      return stackY ? stackExtent(rows, stackSeries) : seriesExtent(rows, stackSeries);
+      if (!stackY) return seriesExtent(rows, stackSeries);
+      return stackedAreaExtent(rows, stackSeries, stackY === 'silhouette' ? 'silhouette' : 'zero');
     }
     const accessor = y ?? noY;
     return extent(data.map((d, i) => accessor(d, i)));
@@ -514,6 +518,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       categoryScale,
       valueScale,
       orientation,
+      stackOffset: stackY === 'silhouette' ? 'silhouette' : 'zero',
       xAccessor: x as (d: unknown, i: number) => XValue,
       yAccessor,
       series: visibleSeries,
@@ -534,6 +539,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       categoryScale,
       valueScale,
       orientation,
+      stackY,
       x,
       yAccessor,
       visibleSeries,
