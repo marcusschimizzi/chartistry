@@ -103,7 +103,8 @@ export interface StackedBarsProps {
 
 /** Stacked multi-series bars from the chart's `series`. */
 export function StackedBars(props: StackedBarsProps): null {
-  const { data, categoryScale, valueScale, orientation, xAccessor, series } = useChartContext();
+  const { data, categoryScale, valueScale, orientation, xAccessor, series, stackOffset } =
+    useChartContext();
 
   const barSeries = useMemo<BarSeries<unknown>[]>(
     () => series.map((s) => ({ key: s.key, value: s.y, color: s.color })),
@@ -120,8 +121,9 @@ export function StackedBars(props: StackedBarsProps): null {
         orientation,
         series: barSeries,
         radius: props.radius,
+        offset: stackOffset,
       }),
-    [data, categoryScale, valueScale, orientation, xAccessor, barSeries, props.radius],
+    [data, categoryScale, valueScale, orientation, xAccessor, barSeries, props.radius, stackOffset],
   );
 
   useMark(node);

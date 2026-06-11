@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { stackedAreaExtent, stackedAreaLayout } from './stacked-area';
+import { stackExtent } from './stack';
 
 const data = [
   { a: 1, b: 2 },
@@ -44,5 +45,17 @@ describe('stackedAreaExtent', () => {
 
   it('is symmetric for the silhouette offset', () => {
     expect(stackedAreaExtent(data, series, 'silhouette')).toEqual([-2, 2]);
+  });
+
+  it('equals stackExtent for the zero offset, including mixed signs', () => {
+    const mixed = [
+      { a: 3, b: -2 },
+      { a: -1, b: 4 },
+    ];
+    const ms = [
+      { key: 'a', value: (d: (typeof mixed)[number]) => d.a },
+      { key: 'b', value: (d: (typeof mixed)[number]) => d.b },
+    ];
+    expect(stackedAreaExtent(mixed, ms, 'zero')).toEqual(stackExtent(mixed, ms));
   });
 });

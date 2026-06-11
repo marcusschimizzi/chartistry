@@ -2,7 +2,8 @@ import { group, type SceneNode } from '../scene/nodes';
 import { bandScale } from '../scales/band';
 import { categoricalColors } from '../scales/ordinal';
 import type { Scale, ScaleValue } from '../scales/types';
-import { stack, type StackSeries } from '../data/stack';
+import type { StackSeries } from '../data/stack';
+import { stackedAreaLayout, type AreaOffset } from '../data/stacked-area';
 import { barRect, type BarOrientation } from './bar';
 
 /** One value series within a multi-series bar mark. */
@@ -64,7 +65,7 @@ export function groupedBarMark<D, C extends ScaleValue = string>(
 
 /** Stacked bars: series accumulate on top of one another within each category. */
 export function stackedBarMark<D, C extends ScaleValue = string>(
-  options: MultiBarOptions<D, C>,
+  options: MultiBarOptions<D, C> & { offset?: AreaOffset },
 ): SceneNode {
   const { data, category, categoryScale, valueScale, series } = options;
   const horizontal = options.orientation === 'horizontal';
@@ -72,7 +73,9 @@ export function stackedBarMark<D, C extends ScaleValue = string>(
   const band = categoryScale.bandwidth();
   const colorByKey = new Map(series.map((s, i) => [s.key, s.color ?? palette[i % palette.length]]));
 
-  const stacked = stack(data, series as ReadonlyArray<StackSeries<D>>);
+  // Honor the offset so stacked bars share the Chart's stacking model — `zero`
+  // (baseline) or `silhouette` (centered), the same as <StackedArea>.
+  const stacked = stackedAreaLayout(data, series as ReadonlyArray<StackSeries<D>>, options.offset);
 
   const columns = data.map((datum, i) => {
     const catStart = categoryScale(category(datum, i));
