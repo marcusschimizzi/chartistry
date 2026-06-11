@@ -100,6 +100,7 @@ export default defineConfig({
             { label: 'Line & area', slug: 'examples/line-and-area' },
             { label: 'Multi-series time series', slug: 'examples/time-series' },
             { label: 'Grouped bars', slug: 'examples/grouped-bars' },
+            { label: 'Bubble & scatter', slug: 'examples/bubble-chart' },
             { label: 'Pie & donut', slug: 'examples/pie-and-donut' },
             { label: 'Canvas renderer', slug: 'examples/canvas-renderer' },
           ],
