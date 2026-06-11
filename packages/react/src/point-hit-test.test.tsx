@@ -67,4 +67,40 @@ describe('point hit-testing', () => {
     await flush();
     expect(getByTestId('active').textContent).toBe('0'); // B
   });
+
+  it('hit-tests against the drawn y accessor, not the first series', async () => {
+    // <Bubbles> draws with the chart `y`; `series` only feeds tooltip values.
+    // Here `y` and the series value order the points oppositely, so resolving by
+    // the wrong one would pick a different datum.
+    const seriesData = [
+      { x: 0, y: 0, a: 10 },
+      { x: 10, y: 0, a: 10 },
+      { x: 10, y: 10, a: 0 }, // drawn at the top (y=10); its series value is 0
+    ];
+    const { container, getByTestId } = render(
+      <Chart
+        width={120}
+        height={120}
+        margin={0}
+        data={seriesData}
+        x={(d) => d.x}
+        y={(d) => d.y}
+        yDomain={[0, 10]}
+        niceY={false}
+        series={[{ key: 'a', y: (d) => d.a }]}
+        renderer={createSvgRenderer({ transition: false })}
+        hitTest="point"
+        title="S"
+      >
+        <Bubbles />
+        <ActiveValue />
+      </Chart>,
+    );
+    await flush();
+    // Pointer near the top-right drawn bubble must resolve that datum (series
+    // value 0), not the one the series' own y would have placed on top.
+    movePointer(container.querySelector('[role="application"]') as HTMLElement, 115, 8);
+    await flush();
+    expect(getByTestId('active').textContent).toBe('0');
+  });
 });

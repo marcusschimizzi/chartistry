@@ -312,16 +312,20 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   const positionsRef = useRef(positions);
   positionsRef.current = positions;
 
+  // The chart-level value accessor that <Bubbles>/<Points> draw with. Shared
+  // with the context below so 2D hit-testing matches exactly where marks land.
+  const yAccessor = (y ?? noY) as (d: unknown, i: number) => number;
+
   // For 2D (scatter/bubble) hit-testing: each datum's plot-pixel position, using
-  // the first series' value, so the pointer can resolve the nearest point.
+  // the same y accessor the points are drawn with, so the pointer resolves the
+  // nearest point against the actual circles.
   const pointPositions = useMemo<Point[]>(() => {
-    const primary = interactiveSeries[0];
     return data.map((d, i) => {
-      const valuePos = valueScale(primary ? primary.y(d, i) : 0);
+      const valuePos = valueScale(yAccessor(d, i));
       const categoryPos = positions[i] ?? 0;
       return horizontal ? { x: valuePos, y: categoryPos } : { x: categoryPos, y: valuePos };
     });
-  }, [data, interactiveSeries, valueScale, positions, horizontal]);
+  }, [data, yAccessor, valueScale, positions, horizontal]);
   const pointPositionsRef = useRef(pointPositions);
   pointPositionsRef.current = pointPositions;
 
@@ -511,7 +515,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       valueScale,
       orientation,
       xAccessor: x as (d: unknown, i: number) => XValue,
-      yAccessor: (y ?? noY) as (d: unknown, i: number) => number,
+      yAccessor,
       series: visibleSeries,
       allSeries,
       toggleSeries,
@@ -531,7 +535,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       valueScale,
       orientation,
       x,
-      y,
+      yAccessor,
       visibleSeries,
       allSeries,
       toggleSeries,
