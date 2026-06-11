@@ -6,3 +6,4 @@ export * from './pie';
 export * from './axis';
 export * from './grid';
 export * from './crosshair';
+export * from './size-legend';

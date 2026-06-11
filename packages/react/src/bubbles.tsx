@@ -1,12 +1,8 @@
 import { useMemo } from 'react';
-import {
-  categoricalColors,
-  colorScale as createColorScale,
-  pointMark,
-  sqrtScale,
-} from '@chartistry/core';
+import { categoricalColors, colorScale as createColorScale, pointMark } from '@chartistry/core';
 import { useChartContext } from './context';
 import { useMark } from './use-mark';
+import { sizeScaleFromData } from './size-scale';
 
 export interface BubblesProps {
   /**
@@ -51,18 +47,7 @@ export function Bubbles(props: BubblesProps): null {
 
   const radius = useMemo(() => {
     if (!size) return undefined;
-    // Anchor the size domain at zero so bubble AREA stays proportional to value.
-    // A [min, max] domain would map the smallest value to the minimum radius and
-    // break that proportionality; sizeRange's lower bound still keeps the
-    // smallest bubbles visible. Take the max directly (not via `extent`, whose
-    // min===max padding would inflate the domain and shrink uniform bubbles).
-    let max = 0;
-    data.forEach((d, i) => {
-      const v = size(d, i);
-      if (Number.isFinite(v) && v > max) max = v;
-    });
-    const domain: [number, number] = sizeDomain ?? [0, max];
-    const scale = sqrtScale({ domain, range: sizeRange, clamp: true });
+    const scale = sizeScaleFromData(data, size, sizeRange, sizeDomain);
     return (d: unknown, i: number) => scale(size(d, i));
   }, [size, data, sizeDomain, sizeRange]);
 
