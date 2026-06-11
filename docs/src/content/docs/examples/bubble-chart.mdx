@@ -6,7 +6,8 @@ description: A bubble chart that encodes a value as area and a category as color
 import BubbleExample from '../../../components/examples/BubbleExample.tsx';
 
 A scatter where each point carries two more dimensions: **population** as the bubble's
-area, and **region** as its color. Hover a bubble for its values.
+area, and **region** as its color. Hover a bubble for its values — `hitTest="point"` snaps
+to the nearest bubble in 2D, rather than to the nearest column along the x axis.
 
 <BubbleExample client:load />
 
@@ -20,7 +21,7 @@ palette. Omit both for a plain scatter of dots.
 ```tsx
 import { Chart, Bubbles, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
 
-<Chart width={640} height={380} data={data} x={(d) => d.income} y={(d) => d.life}>
+<Chart width={640} height={380} data={data} x={(d) => d.income} y={(d) => d.life} hitTest="point">
   <Grid />
   <YAxis />
   <XAxis />

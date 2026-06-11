@@ -6,6 +6,8 @@
  * mathematically from the pointer position instead.
  */
 
+import type { Point } from '../types';
+
 /**
  * Index of the position nearest to `value`, or -1 when there are none. Runs a
  * simple linear scan, so it tolerates unsorted positions; pass `maxDistance` to
@@ -28,6 +30,34 @@ export function nearestIndex(
     }
   }
   return bestDistance <= maxDistance ? best : -1;
+}
+
+/**
+ * Index of the point nearest to (`x`, `y`) by Euclidean distance, or -1 when
+ * there are none. For scatter/bubble charts, where both axes are continuous and
+ * a 1D, column-based hit test would ignore the y position. Pass `maxDistance`
+ * to ignore the pointer when it strays too far from every point.
+ */
+export function nearestPoint(
+  x: number,
+  y: number,
+  points: readonly Point[],
+  maxDistance = Infinity,
+): number {
+  let best = -1;
+  let bestDistanceSq = Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i];
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
+    const dx = point.x - x;
+    const dy = point.y - y;
+    const distanceSq = dx * dx + dy * dy;
+    if (distanceSq < bestDistanceSq) {
+      bestDistanceSq = distanceSq;
+      best = i;
+    }
+  }
+  return bestDistanceSq <= maxDistance * maxDistance ? best : -1;
 }
 
 /** True when (x, y) lies within the [0, width] x [0, height] plot rectangle. */

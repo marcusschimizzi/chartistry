@@ -29,6 +29,7 @@ export default function BubbleExample() {
       x={(d) => d.income}
       y={(d) => d.life}
       yDomain={[55, 85]}
+      hitTest="point"
       margin={{ top: 16, right: 24, bottom: 36, left: 44 }}
       title="Income vs. life expectancy"
       description="Each bubble is a country; area is population, color is region."
