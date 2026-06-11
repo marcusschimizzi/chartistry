@@ -23,6 +23,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:update": "vitest run -u",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
