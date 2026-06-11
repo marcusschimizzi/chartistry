@@ -4,6 +4,13 @@
   "exclude": ["dist"],
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@chartistry/core": ["../packages/core/src/index.ts"],
+      "@chartistry/renderer-svg": ["../packages/renderer-svg/src/index.ts"],
+      "@chartistry/renderer-canvas": ["../packages/renderer-canvas/src/index.ts"],
+      "@chartistry/react": ["../packages/react/src/index.ts"]
+    }
   }
 }

@@ -27,3 +27,6 @@ pnpm-debug.log*
 
 # coverage
 coverage/
+
+# generated API reference (typedoc)
+docs/src/content/docs/api/
