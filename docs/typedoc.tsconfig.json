@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "../packages/core/src",
+    "../packages/renderer-svg/src",
+    "../packages/renderer-canvas/src",
+    "../packages/react/src"
+  ]
+}

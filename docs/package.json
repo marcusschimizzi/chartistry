@@ -23,6 +23,9 @@
     "@astrojs/check": "^0.9.9",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "starlight-typedoc": "^0.23.0",
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "^5.9.3"
   }
 }
