@@ -1,0 +1,40 @@
+---
+title: Bubble & scatter
+description: A bubble chart that encodes a value as area and a category as color.
+---
+
+import BubbleExample from '../../../components/examples/BubbleExample.tsx';
+
+A scatter where each point carries two more dimensions: **population** as the bubble's
+area, and **region** as its color. Hover a bubble for its values.
+
+<BubbleExample client:load />
+
+## How it's built
+
+`<Bubbles>` draws one circle per datum over the chart's `x`/`y` accessors. Pass `size` to
+encode a value as **area** — the radius scales with the square root of the value, so equal
+value differences read as equal area differences — and `color` to map a category through a
+palette. Omit both for a plain scatter of dots.
+
+```tsx
+import { Chart, Bubbles, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
+
+<Chart width={640} height={380} data={data} x={(d) => d.income} y={(d) => d.life}>
+  <Grid />
+  <YAxis />
+  <XAxis />
+  <Bubbles
+    size={(d) => d.population}
+    color={(d) => d.region}
+    sizeRange={[5, 34]}
+    stroke="#ffffff"
+    strokeWidth={1}
+  />
+  <Tooltip />
+</Chart>;
+```
+
+`sizeRange` sets the smallest and largest radius in pixels; `size` is mapped onto it with a
+square-root (area-proportional) scale. For a plain scatter, drop `size` and `color` and the
+bubbles become uniform dots.

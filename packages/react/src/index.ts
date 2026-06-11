@@ -20,6 +20,7 @@ export {
   StackedBars,
   type StackedBarsProps,
 } from './bars';
+export { Bubbles, type BubblesProps } from './bubbles';
 export { XAxis, YAxis, type AxisProps, Grid, type GridProps } from './axes';
 export { Pie, type PieProps } from './pie';
 export { Legend, type LegendProps } from './legend';

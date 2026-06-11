@@ -7,6 +7,7 @@ import {
   Bars,
   BarGroup,
   StackedBars,
+  Bubbles,
   Chart,
   Grid,
   Lines,
@@ -153,6 +154,20 @@ const fixtures: Array<{ name: string; element: ReactElement }> = [
         <YAxis />
         <XAxis />
         <Points />
+      </Chart>
+    ),
+  },
+  {
+    name: 'bubbles',
+    element: (
+      <Chart {...size} margin={margin} data={numeric} x={(d) => d.x} y={(d) => d.y} title="VR" renderer={svg()}>
+        <YAxis />
+        <XAxis />
+        <Bubbles
+          size={(d) => (d as { y: number }).y}
+          color={(_d, i) => (i % 2 === 0 ? 'even' : 'odd')}
+          sizeRange={[3, 14]}
+        />
       </Chart>
     ),
   },
