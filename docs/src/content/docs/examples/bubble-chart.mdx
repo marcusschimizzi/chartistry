@@ -32,6 +32,7 @@ import { Chart, Bubbles, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
     stroke="#ffffff"
     strokeWidth={1}
   />
+  <SizeLegend size={(d) => d.population} sizeRange={[5, 34]} values={[50, 120, 220]} title="Population (M)" />
   <Tooltip />
 </Chart>;
 ```
@@ -39,3 +40,7 @@ import { Chart, Bubbles, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
 `sizeRange` sets the smallest and largest radius in pixels; `size` is mapped onto it with a
 square-root (area-proportional) scale. For a plain scatter, drop `size` and `color` and the
 bubbles become uniform dots.
+
+`<SizeLegend>` decodes that area for the reader as nested circles at representative values.
+Give it the **same `size`/`sizeRange`/`sizeDomain`** as `<Bubbles>` so the two share one
+scale, and `values` to choose which sizes to show.

@@ -1,4 +1,4 @@
-import { Chart, Bubbles, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
+import { Chart, Bubbles, SizeLegend, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
 
 interface Country {
   name: string;
@@ -44,6 +44,13 @@ export default function BubbleExample() {
         sizeRange={[5, 34]}
         stroke="#ffffff"
         strokeWidth={1}
+      />
+      <SizeLegend
+        size={(d) => (d as Country).population}
+        sizeRange={[5, 34]}
+        values={[50, 120, 220]}
+        title="Population (M)"
+        position="bottom-right"
       />
       <Tooltip />
     </Chart>
