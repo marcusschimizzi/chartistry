@@ -1,0 +1,32 @@
+---
+title: Pie & donut
+description: A donut chart with outside labels and leader lines.
+---
+
+import PieExample from '../../../components/examples/PieExample.tsx';
+
+A donut chart — a pie with an inner radius. Labels sit **outside** each slice with leader
+lines; slices too thin to label are skipped automatically.
+
+<PieExample client:load />
+
+## How it's built
+
+`<Pie>` reads the chart's `x` (slice name) and `y` (slice value) accessors. `innerRadius`
+turns the pie into a donut (set it to `0` for a full pie), and `labelPlacement="outside"`
+draws labels beyond the arc.
+
+```tsx
+import { Chart, Pie, Tooltip } from '@chartistry/react';
+
+<Chart width={520} height={360} data={data} x={(d) => d.browser} y={(d) => d.share} margin={48}>
+  <Pie
+    innerRadius={0.6}
+    padAngle={0.015}
+    label={(d) => d.browser}
+    labelPlacement="outside"
+    colors={['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#94a3b8']}
+  />
+  <Tooltip />
+</Chart>;
+```

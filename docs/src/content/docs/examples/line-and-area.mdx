@@ -1,0 +1,31 @@
+---
+title: Line & area
+description: A filled line chart over a time axis, with a grid, crosshair, and tooltip.
+---
+
+import AreaExample from '../../../components/examples/AreaExample.tsx';
+
+A single series drawn as a line and filled to the baseline, over a **time axis**. Move the
+pointer across it for the crosshair and tooltip.
+
+<AreaExample client:load />
+
+## How it's built
+
+`xScaleType="time"` gives a calendar-aware axis (here in `utc` so the labels are stable
+regardless of the reader's time zone). `<LineSeries area>` strokes the line and fills
+beneath it; `<Points>` marks each datum; `<Crosshair>` and `<Tooltip>` add interaction.
+
+```tsx
+import { Chart, LineSeries, Points, Grid, XAxis, YAxis, Tooltip, Crosshair } from '@chartistry/react';
+
+<Chart width={640} height={320} data={data} x={(d) => d.t} y={(d) => d.v} xScaleType="time" utc>
+  <Grid />
+  <YAxis />
+  <XAxis />
+  <LineSeries stroke="#4f46e5" strokeWidth={2.5} area fill="rgba(79, 70, 229, 0.15)" />
+  <Points radius={3.5} fill="#4f46e5" stroke="#ffffff" strokeWidth={1.5} />
+  <Crosshair />
+  <Tooltip />
+</Chart>;
+```
