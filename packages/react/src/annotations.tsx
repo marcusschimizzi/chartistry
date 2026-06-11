@@ -102,10 +102,14 @@ export function ReferenceBand(props: ReferenceBandProps): null {
       hi = Math.max(a, b);
       along = horizontal;
     } else if (x) {
-      const a = categoryScale(x[0]) + categoryScale.bandwidth() / 2;
-      const b = categoryScale(x[1]) + categoryScale.bandwidth() / 2;
+      // Cover the full extent of the categories: from the left edge of the
+      // first band to the right edge of the last. bandwidth is 0 for continuous
+      // scales, so this reduces to the two exact positions there.
+      const bw = categoryScale.bandwidth();
+      const a = categoryScale(x[0]);
+      const b = categoryScale(x[1]);
       lo = Math.min(a, b);
-      hi = Math.max(a, b);
+      hi = Math.max(a, b) + bw;
       along = !horizontal;
     } else {
       return group([], { key: 'reference-band' });

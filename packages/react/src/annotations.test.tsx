@@ -72,6 +72,37 @@ describe('ReferenceBand', () => {
     expect(Number(band.getAttribute('height'))).toBeCloseTo(40);
     expect(container.textContent).toContain('ok');
   });
+
+  it('covers full category bands for an x range', async () => {
+    const bandData = [
+      { c: 'A', v: 1 },
+      { c: 'B', v: 2 },
+      { c: 'C', v: 3 },
+      { c: 'D', v: 4 },
+    ];
+    const { container } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={bandData}
+        x={(d) => d.c}
+        y={(d) => d.v}
+        xScaleType="band"
+        bandPadding={0}
+        renderer={svg()}
+        title="B"
+        accessible={false}
+      >
+        <ReferenceBand x={['A', 'C']} />
+      </Chart>,
+    );
+    await flush();
+    // 4 bands of width 50; A..C spans A's left edge (0) to C's right edge (150).
+    const band = container.querySelector('rect') as SVGRectElement;
+    expect(Number(band.getAttribute('x'))).toBeCloseTo(0);
+    expect(Number(band.getAttribute('width'))).toBeCloseTo(150);
+  });
 });
 
 describe('Annotation', () => {
