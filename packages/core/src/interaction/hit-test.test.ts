@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nearestIndex, withinPlot } from './hit-test';
+import { nearestIndex, nearestPoint, withinPlot } from './hit-test';
 
 describe('nearestIndex', () => {
   it('finds the closest position by absolute distance', () => {
@@ -24,6 +24,34 @@ describe('nearestIndex', () => {
 
   it('skips non-finite positions', () => {
     expect(nearestIndex(10, [NaN, 12, Infinity])).toBe(1);
+  });
+});
+
+describe('nearestPoint', () => {
+  const points = [
+    { x: 0, y: 0 },
+    { x: 100, y: 0 },
+    { x: 100, y: 100 },
+  ];
+
+  it('finds the closest point in 2D, not just by x', () => {
+    // Same x as points 1 and 2, but vertically nearer point 2.
+    expect(nearestPoint(100, 90, points)).toBe(2);
+    expect(nearestPoint(100, 10, points)).toBe(1);
+    expect(nearestPoint(10, 5, points)).toBe(0);
+  });
+
+  it('returns -1 for empty input', () => {
+    expect(nearestPoint(5, 5, [])).toBe(-1);
+  });
+
+  it('respects maxDistance (Euclidean)', () => {
+    expect(nearestPoint(0, 0, [{ x: 30, y: 40 }], 40)).toBe(-1); // distance 50 > 40
+    expect(nearestPoint(0, 0, [{ x: 30, y: 40 }], 60)).toBe(0); // distance 50 < 60
+  });
+
+  it('skips points with non-finite coordinates', () => {
+    expect(nearestPoint(10, 10, [{ x: NaN, y: 0 }, { x: 12, y: 12 }])).toBe(1);
   });
 });
 

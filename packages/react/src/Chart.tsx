@@ -18,6 +18,7 @@ import {
   extent,
   linearScale,
   nearestIndex,
+  nearestPoint,
   seriesExtent,
   stackExtent,
   timeScale,
@@ -79,6 +80,13 @@ export interface ChartProps<D> {
   colors?: readonly string[];
   /** Track the pointer to drive <Tooltip>/<Crosshair>/<Highlight>. Default true. */
   interactive?: boolean;
+  /**
+   * How the pointer resolves the active datum. `category` (default) snaps to the
+   * nearest column along the category axis — right for bars, lines, and areas.
+   * `point` finds the nearest datum in 2D — right for scatter/bubble charts,
+   * where both axes are continuous; it targets the first series.
+   */
+  hitTest?: 'category' | 'point';
   /** Accessible name for the chart (figure label). Strongly recommended. */
   title?: string;
   /** Longer description, announced as the figure's description. */
@@ -122,6 +130,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     bandPadding = 0.2,
     colors,
     interactive = true,
+    hitTest = 'category',
     title,
     description,
     xLabel = 'x',
@@ -303,6 +312,19 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   const positionsRef = useRef(positions);
   positionsRef.current = positions;
 
+  // For 2D (scatter/bubble) hit-testing: each datum's plot-pixel position, using
+  // the first series' value, so the pointer can resolve the nearest point.
+  const pointPositions = useMemo<Point[]>(() => {
+    const primary = interactiveSeries[0];
+    return data.map((d, i) => {
+      const valuePos = valueScale(primary ? primary.y(d, i) : 0);
+      const categoryPos = positions[i] ?? 0;
+      return horizontal ? { x: valuePos, y: categoryPos } : { x: categoryPos, y: valuePos };
+    });
+  }, [data, interactiveSeries, valueScale, positions, horizontal]);
+  const pointPositionsRef = useRef(pointPositions);
+  pointPositionsRef.current = pointPositions;
+
   const setActive = useCallback((next: number | null) => {
     if (next === activeIndexRef.current) return;
     activeIndexRef.current = next;
@@ -335,12 +357,15 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         return;
       }
       notifyPointer({ x: localX, y: localY });
-      // Hit-test along the category axis (x for vertical, y for horizontal).
-      const along = horizontal ? localY : localX;
-      const index = nearestIndex(along, positionsRef.current);
+      // `point`: nearest datum in 2D (scatter/bubble). `category` (default):
+      // nearest column along the category axis (x for vertical, y for horizontal).
+      const index =
+        hitTest === 'point'
+          ? nearestPoint(localX, localY, pointPositionsRef.current)
+          : nearestIndex(horizontal ? localY : localX, positionsRef.current);
       setActive(index < 0 ? null : index);
     },
-    [plot.x, plot.y, plot.width, plot.height, horizontal, setActive, notifyPointer],
+    [plot.x, plot.y, plot.width, plot.height, horizontal, hitTest, setActive, notifyPointer],
   );
 
   const handlePointerLeave = useCallback(() => {
