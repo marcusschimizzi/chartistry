@@ -102,6 +102,7 @@ export default defineConfig({
             { label: 'Grouped bars', slug: 'examples/grouped-bars' },
             { label: 'Bubble & scatter', slug: 'examples/bubble-chart' },
             { label: 'Pie & donut', slug: 'examples/pie-and-donut' },
+            { label: 'Annotations', slug: 'examples/annotations' },
             { label: 'Canvas renderer', slug: 'examples/canvas-renderer' },
           ],
         },
