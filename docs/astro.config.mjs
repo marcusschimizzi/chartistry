@@ -95,7 +95,14 @@ export default defineConfig({
         },
         {
           label: 'Examples',
-          items: [{ label: 'Bar chart', slug: 'examples/bar-chart' }],
+          items: [
+            { label: 'Bar chart', slug: 'examples/bar-chart' },
+            { label: 'Line & area', slug: 'examples/line-and-area' },
+            { label: 'Multi-series time series', slug: 'examples/time-series' },
+            { label: 'Grouped bars', slug: 'examples/grouped-bars' },
+            { label: 'Pie & donut', slug: 'examples/pie-and-donut' },
+            { label: 'Canvas renderer', slug: 'examples/canvas-renderer' },
+          ],
         },
         {
           label: 'Concepts',

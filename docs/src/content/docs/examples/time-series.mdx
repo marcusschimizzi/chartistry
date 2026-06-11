@@ -1,0 +1,44 @@
+---
+title: Multi-series time series
+description: Several series over a shared time axis, with a clickable legend.
+---
+
+import TimeSeriesExample from '../../../components/examples/TimeSeriesExample.tsx';
+
+Three series share one time axis. **Click a legend item** to toggle that series — the chart
+drops it from the scales, marks, and tooltip, then rescales. Move the pointer for the
+crosshair, focus rings, and a combined tooltip.
+
+<TimeSeriesExample client:load />
+
+## How it's built
+
+Pass named `series` to `<Chart>` and render them with `<Lines>` (one line per series). The
+same `series` drive `<Legend>`, `<Highlight>`, and `<Tooltip>`.
+
+```tsx
+import { Chart, Lines, Highlight, XAxis, YAxis, Grid, Legend, Tooltip, Crosshair } from '@chartistry/react';
+
+<Chart
+  width={640}
+  height={340}
+  data={data}
+  x={(d) => d.t}
+  xScaleType="time"
+  utc
+  series={[
+    { key: 'North', y: (d) => d.North, color: '#4f46e5' },
+    { key: 'South', y: (d) => d.South, color: '#10b981' },
+    { key: 'West', y: (d) => d.West, color: '#f59e0b' },
+  ]}
+>
+  <Grid />
+  <YAxis />
+  <XAxis />
+  <Lines strokeWidth={2.5} />
+  <Highlight />
+  <Crosshair />
+  <Tooltip />
+  <Legend />
+</Chart>;
+```

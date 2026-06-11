@@ -1,0 +1,35 @@
+---
+title: Canvas renderer
+description: The same chart, painted onto an HTML canvas instead of SVG.
+---
+
+import CanvasRendererExample from '../../../components/examples/CanvasRendererExample.tsx';
+
+Every other example on this site uses the default **SVG** renderer. This one is identical
+except for one prop — it passes a **Canvas** renderer. The core builds the same scene graph
+either way; only the backend that paints it changes.
+
+<CanvasRendererExample client:load />
+
+## How it's built
+
+Create a canvas renderer and hand it to `<Chart>` via `renderer`. Everything else — marks,
+axes, tooltip — is unchanged.
+
+```tsx
+import { Chart, Bars, XAxis, YAxis, Grid, Tooltip } from '@chartistry/react';
+import { createCanvasRenderer } from '@chartistry/renderer-canvas';
+
+const canvasRenderer = createCanvasRenderer();
+
+<Chart width={620} height={320} data={data} x={(d) => d.name} y={(d) => d.value} xScaleType="band" renderer={canvasRenderer}>
+  <Grid />
+  <YAxis />
+  <XAxis />
+  <Bars fill="#0d9488" radius={4} />
+  <Tooltip />
+</Chart>;
+```
+
+Because the renderer is pluggable, you can choose SVG for crispness and easy CSS/debugging,
+or Canvas for very dense scenes — without changing any chart code.

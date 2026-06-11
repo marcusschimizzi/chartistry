@@ -1,0 +1,40 @@
+---
+title: Grouped bars
+description: Grouped multi-series bars over a categorical axis.
+---
+
+import GroupedBarsExample from '../../../components/examples/GroupedBarsExample.tsx';
+
+Two series per category, drawn side by side. Toggle a series from the legend, and hover a
+group for the tooltip.
+
+<GroupedBarsExample client:load />
+
+## How it's built
+
+As with multi-series lines, pass named `series` to `<Chart>` — then render `<BarGroup>` for
+side-by-side bars. Swapping it for `<StackedBars>` stacks the same series instead (set
+`stackY` on `<Chart>` so the y domain spans the stacked totals).
+
+```tsx
+import { Chart, BarGroup, XAxis, YAxis, Grid, Legend, Tooltip } from '@chartistry/react';
+
+<Chart
+  width={620}
+  height={340}
+  data={data}
+  x={(d) => d.quarter}
+  xScaleType="band"
+  series={[
+    { key: 'Plan', y: (d) => d.plan, color: '#94a3b8' },
+    { key: 'Actual', y: (d) => d.actual, color: '#4f46e5' },
+  ]}
+>
+  <Grid />
+  <YAxis />
+  <XAxis />
+  <BarGroup radius={3} />
+  <Tooltip />
+  <Legend />
+</Chart>;
+```
