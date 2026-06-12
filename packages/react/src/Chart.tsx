@@ -62,6 +62,9 @@ export interface ChartProps<D> {
   yScaleType?: 'linear' | 'band';
   /** Row category accessor, when `yScaleType="band"`. */
   yCategory?: (datum: D, index: number) => XValue;
+  /** Override the auto-computed row category order (band y), like `xDomain` for
+   * columns. Lets you fix row order or declare empty rows. */
+  yCategoryDomain?: readonly XValue[];
   /** Per-datum value, e.g. a heatmap cell's value (drives color and a11y). */
   value?: (datum: D, index: number) => number;
   /** For a time axis, snap ticks and format labels in UTC instead of local time. */
@@ -133,6 +136,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     xScaleType = 'linear',
     yScaleType = 'linear',
     yCategory,
+    yCategoryDomain,
     value,
     utc = false,
     locale,
@@ -311,6 +315,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   // row categories, for grid charts like <Heatmap>. Replaces the value axis.
   const rowCategories = useMemo<XValue[]>(() => {
     if (yScaleType !== 'band' || !yCategory) return [];
+    // An explicit domain fixes row order and can declare empty rows, mirroring
+    // xDomain for columns; otherwise rows are the first-seen yCategory values.
+    if (yCategoryDomain) return [...yCategoryDomain];
     const seen: XValue[] = [];
     const known = new Set<string | number>();
     data.forEach((d, i) => {
@@ -322,7 +329,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       }
     });
     return seen;
-  }, [yScaleType, yCategory, data]);
+    // yCategoryDomain is a stable array prop; stringify keeps deps shallow-safe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [yScaleType, yCategory, data, JSON.stringify(yCategoryDomain ?? null)]);
 
   const rowScale = useMemo<Scale<XValue> | null>(() => {
     // Only a true grid (band y + a row accessor) replaces the value axis;
@@ -605,6 +614,20 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         const cols = g.colCats.length;
         const rows = g.rowCats.length;
         let { ci, ri } = g.cellOf(current);
+        // The active datum may no longer be on the grid (e.g. a domain change
+        // dropped its column/row). Re-seed from a real cell rather than letting
+        // a -1 index slide to column/row 0 against a stale datum.
+        if (ci < 0 || ri < 0) {
+          const reseed =
+            event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+              ? g.lastCell()
+              : g.firstCell();
+          if (reseed === null) return;
+          event.preventDefault();
+          setActive(reseed);
+          announce(reseed);
+          return;
+        }
         switch (event.key) {
           case 'ArrowRight':
             ci = Math.min(cols - 1, ci + 1);

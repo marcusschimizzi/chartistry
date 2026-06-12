@@ -267,6 +267,35 @@ describe('Heatmap', () => {
     expect(getByTestId('active').textContent).toBe('1');
   });
 
+  it('honors yCategoryDomain for row order and declared empty rows', async () => {
+    // Data only has rows AM/PM; the domain adds an empty "Mid" row and fixes
+    // the order PM, Mid, AM — so the y-axis shows all three in that order.
+    const { container } = render(
+      <Chart
+        width={200}
+        height={120}
+        margin={{ left: 40 }}
+        data={data}
+        x={(d) => d.col}
+        xScaleType="band"
+        yCategory={(d) => d.row}
+        yCategoryDomain={['PM', 'Mid', 'AM']}
+        yScaleType="band"
+        value={(d) => d.v}
+        renderer={svg()}
+        title="D"
+      >
+        <Heatmap />
+        <YAxis />
+      </Chart>,
+    );
+    await flush();
+    const text = container.textContent ?? '';
+    expect(text).toContain('Mid'); // declared, data-less row still appears
+    // Still one rect per datum (the empty row adds no cells).
+    expect(container.querySelectorAll('rect')).toHaveLength(4);
+  });
+
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {
     const { container } = renderGrid(undefined, { accessible: true });
     await flush();

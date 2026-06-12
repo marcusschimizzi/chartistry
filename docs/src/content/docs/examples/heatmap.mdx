@@ -42,4 +42,8 @@ import { Chart, Heatmap, XAxis, YAxis } from '@chartistry/react';
 to change it, `colorDomain` to fix the range). `showValues` prints each cell's value in an
 auto-contrasting color so it stays legible on light and dark cells.
 
+By default the columns and rows come from the data in first-seen order. To pin the order — or
+to declare rows/columns that have no data yet, so the grid keeps a fixed shape — pass
+`xDomain` for the columns and `yCategoryDomain` for the rows.
+
 A standalone color-scale legend is a natural companion — coming next.
