@@ -326,11 +326,17 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   }, [yScaleType, rowCategories, plot.height, bandPadding]);
 
   // Assign category/value to the actual x and y axes for this orientation. A
-  // band y axis (rowScale) takes the y slot directly.
-  const xScale = horizontal ? (valueScale as unknown as Scale<XValue>) : categoryScale;
-  const yScale = horizontal
-    ? categoryScale
-    : (rowScale ?? (valueScale as unknown as Scale<XValue>));
+  // band y axis (rowScale) is a two-category grid: columns are always x and
+  // rows always y, so orientation does not flip it (there is no value axis to
+  // swap). Otherwise category/value swap with orientation as usual.
+  const xScale =
+    rowScale != null
+      ? categoryScale
+      : horizontal
+        ? (valueScale as unknown as Scale<XValue>)
+        : categoryScale;
+  const yScale =
+    rowScale ?? (horizontal ? categoryScale : (valueScale as unknown as Scale<XValue>));
 
   // The series to interrogate on hover: the visible ones, or an implicit single
   // series wrapping the chart-level y accessor so single-series charts hover too.
@@ -384,8 +390,15 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     const rowCats = rowScale.domain;
     const colCenters = colCats.map((c) => categoryScale(c) + categoryScale.bandwidth() / 2);
     const rowCenters = rowCats.map((r) => rowScale(r) + rowScale.bandwidth() / 2);
-    const index = new Map<string, number>();
-    data.forEach((d, i) => index.set(`${keyOf(x(d, i))} ${keyOf(yCategory(d, i))}`, i));
+    // Nested column→row map so category labels containing the separator can't
+    // collide into the same flat string key.
+    const index = new Map<string | number, Map<string | number, number>>();
+    data.forEach((d, i) => {
+      const col = keyOf(x(d, i));
+      let rows = index.get(col);
+      if (!rows) index.set(col, (rows = new Map()));
+      rows.set(keyOf(yCategory(d, i)), i);
+    });
     return { colCats, rowCats, colCenters, rowCenters, index, keyOf };
   }, [rowScale, categoryScale, data, x, yCategory]);
   const gridRef = useRef(grid);
@@ -431,7 +444,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         const cell =
           ci < 0 || ri < 0
             ? undefined
-            : g.index.get(`${g.keyOf(g.colCats[ci]!)} ${g.keyOf(g.rowCats[ri]!)}`);
+            : g.index.get(g.keyOf(g.colCats[ci]!))?.get(g.keyOf(g.rowCats[ri]!));
         setActive(cell ?? null);
         return;
       }

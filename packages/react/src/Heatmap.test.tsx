@@ -90,6 +90,44 @@ describe('Heatmap', () => {
     expect(getByTestId('active').textContent).toBe('0');
   });
 
+  it('resolves cells when labels contain the separator (no key collision)', async () => {
+    // "a b"/"c" and "a"/"b c" would both flatten to "a b c" under a space-joined
+    // key; a nested column→row lookup keeps them distinct.
+    const collide: Cell[] = [
+      { col: 'a b', row: 'c', v: 1 },
+      { col: 'a', row: 'b c', v: 2 },
+    ];
+    const { container, getByTestId } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={collide}
+        x={(d) => d.col}
+        xScaleType="band"
+        yCategory={(d) => d.row}
+        yScaleType="band"
+        value={(d) => d.v}
+        bandPadding={0}
+        renderer={svg()}
+        title="H"
+        accessible
+      >
+        <Heatmap />
+        <ActiveCell />
+      </Chart>,
+    );
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    // Columns [a b, a] → centers 50/150; rows [c, b c] → 25/75.
+    movePointer(app, 50, 25); // "a b" / "c" → datum 0
+    await flush();
+    expect(getByTestId('active').textContent).toBe('0');
+    movePointer(app, 150, 75); // "a" / "b c" → datum 1
+    await flush();
+    expect(getByTestId('active').textContent).toBe('1');
+  });
+
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {
     const { container } = renderGrid(undefined, { accessible: true });
     await flush();
