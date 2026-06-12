@@ -536,29 +536,48 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         return;
       }
       // Grid (heatmap): arrows move spatially by column/row, not by flat index,
-      // so focus follows the visible grid. Lands only on populated cells.
+      // so focus follows the visible grid.
       const g = gridRef.current;
       if (g) {
+        // From no selection, land on a guaranteed-populated cell (the first or
+        // last datum) so keyboard users can always begin — even on a sparse
+        // grid whose only cells are interior, where no corner/edge is populated.
+        if (current === null) {
+          let start: number;
+          switch (event.key) {
+            case 'ArrowLeft':
+            case 'ArrowUp':
+            case 'End':
+              start = n - 1;
+              break;
+            case 'ArrowRight':
+            case 'ArrowDown':
+            case 'Home':
+              start = 0;
+              break;
+            default:
+              return;
+          }
+          event.preventDefault();
+          setActive(start);
+          announce(start);
+          return;
+        }
         const cols = g.colCats.length;
         const rows = g.rowCats.length;
-        const cur = current === null ? { ci: -1, ri: -1 } : g.cellOf(current);
-        let { ci, ri } = cur;
+        let { ci, ri } = g.cellOf(current);
         switch (event.key) {
           case 'ArrowRight':
-            ci = ci < 0 ? 0 : Math.min(cols - 1, ci + 1);
-            if (ri < 0) ri = 0;
+            ci = Math.min(cols - 1, ci + 1);
             break;
           case 'ArrowLeft':
-            ci = ci < 0 ? cols - 1 : Math.max(0, ci - 1);
-            if (ri < 0) ri = 0;
+            ci = Math.max(0, ci - 1);
             break;
           case 'ArrowDown':
-            ri = ri < 0 ? 0 : Math.min(rows - 1, ri + 1);
-            if (ci < 0) ci = 0;
+            ri = Math.min(rows - 1, ri + 1);
             break;
           case 'ArrowUp':
-            ri = ri < 0 ? rows - 1 : Math.max(0, ri - 1);
-            if (ci < 0) ci = 0;
+            ri = Math.max(0, ri - 1);
             break;
           case 'Home':
             ci = 0;
@@ -635,7 +654,10 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       datum,
       xValue: x(data[activeIndex] as D, activeIndex),
       category: positions[activeIndex] ?? 0,
-      orientation,
+      // A grid is always columns-on-x / rows-on-y, so overlays must read it as
+      // vertical regardless of the prop — otherwise Tooltip/Crosshair/Highlight
+      // would swap the category/value coordinates and anchor in the wrong place.
+      orientation: isGrid ? 'vertical' : orientation,
       points,
     };
   }, [
@@ -646,6 +668,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     valueScale,
     x,
     orientation,
+    isGrid,
     rowScale,
     value,
     yCategory,

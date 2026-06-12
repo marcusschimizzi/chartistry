@@ -199,6 +199,40 @@ describe('Heatmap', () => {
     expect(domain.every((n: unknown) => typeof n === 'number')).toBe(true);
   });
 
+  it('lets keyboard focus start on a sparse grid (first arrow selects a cell)', async () => {
+    // A 3×3 grid with only two interior/edge cells populated — no corner has a
+    // datum, so a corner-seeking first key would never select anything.
+    const sparse = [
+      { col: 'B', row: 'mid', v: 5 },
+      { col: 'C', row: 'low', v: 7 },
+    ];
+    const { container, getByTestId } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={sparse}
+        x={(d) => d.col}
+        xScaleType="band"
+        xDomain={['A', 'B', 'C']}
+        yCategory={(d) => d.row}
+        yScaleType="band"
+        value={(d) => d.v}
+        renderer={svg()}
+        title="S"
+        accessible
+      >
+        <Heatmap />
+        <ActiveCell />
+      </Chart>,
+    );
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    fireEvent.keyDown(app, { key: 'ArrowRight' }); // from none → first datum (0)
+    await flush();
+    expect(getByTestId('active').textContent).toBe('0');
+  });
+
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {
     const { container } = renderGrid(undefined, { accessible: true });
     await flush();
