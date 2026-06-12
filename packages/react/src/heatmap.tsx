@@ -7,14 +7,29 @@ import {
   heatmapMark,
   sequentialScale,
   text,
+  type SceneNode,
 } from '@chartistry/core';
 import { useChartContext, type XValue } from './context';
 import { useMark } from './use-mark';
 
 const defaultFormat = (value: number): string => String(value);
 
+// Distinct values in first-seen order, keyed by primitive (Dates by instant).
+function distinct(values: readonly XValue[]): XValue[] {
+  const out: XValue[] = [];
+  const seen = new Set<string | number>();
+  for (const v of values) {
+    const key = v instanceof Date ? v.getTime() : v;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push(v);
+    }
+  }
+  return out;
+}
+
 export interface HeatmapProps {
-  /** Row (y) category accessor. The x categories come from the chart's `x`. */
+  /** Row (y) category accessor. The columns come from the chart's `x`. */
   y: (datum: unknown, index: number) => XValue;
   /** Cell value accessor — drives the color. */
   value: (datum: unknown, index: number) => number;
@@ -30,18 +45,20 @@ export interface HeatmapProps {
   format?: (value: number) => string;
   /** Draw row labels in the left margin. Default true. */
   rowLabels?: boolean;
+  /** Draw column labels under the plot. Default true. */
+  columnLabels?: boolean;
   /** Override the auto-contrast value-label color. */
   labelColor?: string;
 }
 
 /**
- * A heatmap: a grid of colored cells over two category axes. Use it inside a
- * `<Chart xScaleType="band">` (which supplies the x categories and plot) and
- * pass `y` for the rows and `value` for the color. It builds its own row band
- * scale and sequential color scale, and draws row labels in the left margin.
+ * A heatmap: a grid of colored cells over two category axes. It's self-contained
+ * — it reads the chart's `x` accessor and plot, builds its own column and row
+ * band scales (uniform cells, independent of `bandPadding`/`orientation`), and
+ * draws both axes' labels. Use it inside a `<Chart>` and don't add `<XAxis>`.
  */
 export function Heatmap(props: HeatmapProps): null {
-  const { data, categoryScale, plot, xAccessor } = useChartContext();
+  const { data, plot, xAccessor } = useChartContext();
   const {
     y,
     value,
@@ -52,21 +69,17 @@ export function Heatmap(props: HeatmapProps): null {
     showValues,
     format = defaultFormat,
     rowLabels = true,
+    columnLabels = true,
     labelColor,
   } = props;
 
   const node = useMemo(() => {
-    // Distinct row categories, in first-seen order (top to bottom).
-    const rows: XValue[] = [];
-    const seen = new Set<string | number>();
-    data.forEach((d, i) => {
-      const row = y(d, i);
-      const key = row instanceof Date ? row.getTime() : row;
-      if (!seen.has(key)) {
-        seen.add(key);
-        rows.push(row);
-      }
-    });
+    const cols = distinct(data.map((d, i) => xAccessor(d, i)));
+    const rows = distinct(data.map((d, i) => y(d, i)));
+    // Both axes use paddingInner 0, so cells are uniform; the `padding` prop adds
+    // an even gap between them. Plot dimensions are used directly, so the grid is
+    // unaffected by the chart's bandPadding or orientation.
+    const xScale = bandScale<XValue>({ domain: cols, range: [0, plot.width], paddingInner: 0 });
     const yScale = bandScale<XValue>({ domain: rows, range: [0, plot.height], paddingInner: 0 });
 
     const values = data.map((d, i) => value(d, i));
@@ -75,7 +88,7 @@ export function Heatmap(props: HeatmapProps): null {
 
     const cellsNode = heatmapMark({
       cells,
-      xScale: categoryScale,
+      xScale,
       yScale,
       color,
       padding,
@@ -84,25 +97,43 @@ export function Heatmap(props: HeatmapProps): null {
       labelColor,
     });
 
-    if (!rowLabels) return cellsNode;
-    const labels = rows.map((cat, i) =>
-      text(String(cat), {
-        x: -8,
-        y: yScale(cat) + yScale.bandwidth() / 2,
-        textAlign: 'right',
-        textBaseline: 'middle',
-        fill: '#475569',
-        fontSize: 11,
-        key: `row:${i}`,
-      }),
-    );
-    return group([cellsNode, group(labels, { key: 'row-labels' })], {
-      key: 'heatmap',
-      animate: false,
-    });
+    const labels: SceneNode[] = [];
+    if (rowLabels) {
+      for (const cat of rows) {
+        labels.push(
+          text(String(cat), {
+            x: -8,
+            y: yScale(cat) + yScale.bandwidth() / 2,
+            textAlign: 'right',
+            textBaseline: 'middle',
+            fill: '#475569',
+            fontSize: 11,
+            key: `row:${String(cat)}`,
+          }),
+        );
+      }
+    }
+    if (columnLabels) {
+      for (const cat of cols) {
+        labels.push(
+          text(String(cat), {
+            x: xScale(cat) + xScale.bandwidth() / 2,
+            y: plot.height + 16,
+            textAlign: 'center',
+            textBaseline: 'middle',
+            fill: '#475569',
+            fontSize: 11,
+            key: `col:${String(cat)}`,
+          }),
+        );
+      }
+    }
+
+    if (labels.length === 0) return cellsNode;
+    return group([cellsNode, group(labels, { key: 'labels' })], { key: 'heatmap', animate: false });
   }, [
     data,
-    categoryScale,
+    plot.width,
     plot.height,
     xAccessor,
     y,
@@ -114,6 +145,7 @@ export function Heatmap(props: HeatmapProps): null {
     showValues,
     format,
     rowLabels,
+    columnLabels,
     labelColor,
   ]);
 

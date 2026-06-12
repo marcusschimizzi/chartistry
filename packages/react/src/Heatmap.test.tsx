@@ -45,10 +45,20 @@ describe('Heatmap', () => {
     await flush();
 
     // One rect per cell (2 columns × 2 rows).
-    expect(container.querySelectorAll('rect')).toHaveLength(4);
+    const cells = Array.from(container.querySelectorAll('rect'));
+    expect(cells).toHaveLength(4);
+
+    // Cells are uniform: same width and same height across the grid.
+    const widths = new Set(cells.map((c) => c.getAttribute('width')));
+    const heights = new Set(cells.map((c) => c.getAttribute('height')));
+    expect(widths.size).toBe(1);
+    expect(heights.size).toBe(1);
+
     const textContent = container.textContent ?? '';
     expect(textContent).toContain('AM'); // row labels
     expect(textContent).toContain('PM');
+    expect(textContent).toContain('Mon'); // column labels
+    expect(textContent).toContain('Tue');
     expect(textContent).toContain('9'); // value labels
   });
 });

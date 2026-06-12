@@ -12,16 +12,15 @@ A heatmap encodes a value as **color** across two categorical axes — here sale
 
 ## How it's built
 
-Use `<Heatmap>` inside a `<Chart xScaleType="band">`. The chart supplies the **x** categories
-(and the plot); `<Heatmap>` takes `y` for the rows and `value` for the color, builds its own
-row band scale and a sequential color scale, and draws the row labels in the left margin.
+`<Heatmap>` is self-contained: it reads the chart's **x** accessor and plot, builds its own
+column and row band scales (uniform cells, independent of `bandPadding`/`orientation`), and
+draws both axes' labels — so you don't add an `<XAxis>`.
 
 ```tsx
-import { Chart, Heatmap, XAxis } from '@chartistry/react';
+import { Chart, Heatmap } from '@chartistry/react';
 
 <Chart width={620} height={280} data={data} x={(d) => d.month} xScaleType="band" margin={{ left: 64, bottom: 32 }}>
   <Heatmap y={(d) => d.region} value={(d) => d.sales} showValues padding={2} radius={3} />
-  <XAxis />
 </Chart>;
 ```
 

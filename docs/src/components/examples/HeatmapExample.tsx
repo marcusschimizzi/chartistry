@@ -1,4 +1,4 @@
-import { Chart, Heatmap, XAxis } from '@chartistry/react';
+import { Chart, Heatmap } from '@chartistry/react';
 
 interface Cell {
   month: string;
@@ -33,7 +33,6 @@ export default function HeatmapExample() {
         padding={2}
         radius={3}
       />
-      <XAxis />
     </Chart>
   );
 }
