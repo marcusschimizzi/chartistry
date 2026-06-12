@@ -419,7 +419,34 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     // The datum at a column/row cell, or null when the grid is sparse there.
     const at = (ci: number, ri: number) =>
       index.get(colKeys[ci]!)?.get(rowKeys[ri]!) ?? null;
-    return { colCats, rowCats, colCenters, rowCenters, index, keyOf, cellOf, at };
+    // The first/last datum that actually occupies a cell on the grid, scanning
+    // in row-major order. Used to seed keyboard focus so it can only land on a
+    // rendered cell — never a datum whose column/row is outside the scales.
+    const scan = (reverse: boolean): number | null => {
+      for (let r = 0; r < rowKeys.length; r++) {
+        const ri = reverse ? rowKeys.length - 1 - r : r;
+        for (let c = 0; c < colKeys.length; c++) {
+          const ci = reverse ? colKeys.length - 1 - c : c;
+          const cell = at(ci, ri);
+          if (cell !== null) return cell;
+        }
+      }
+      return null;
+    };
+    const firstCell = () => scan(false);
+    const lastCell = () => scan(true);
+    return {
+      colCats,
+      rowCats,
+      colCenters,
+      rowCenters,
+      index,
+      keyOf,
+      cellOf,
+      at,
+      firstCell,
+      lastCell,
+    };
   }, [rowScale, categoryScale, data, x, yCategory]);
   const gridRef = useRef(grid);
   gridRef.current = grid;
@@ -539,25 +566,27 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       // so focus follows the visible grid.
       const g = gridRef.current;
       if (g) {
-        // From no selection, land on a guaranteed-populated cell (the first or
-        // last datum) so keyboard users can always begin — even on a sparse
-        // grid whose only cells are interior, where no corner/edge is populated.
+        // From no selection, land on a cell that actually exists on the grid
+        // (the first or last occupied cell in row-major order) so keyboard users
+        // can always begin — even on a sparse grid with no populated corner —
+        // and never focus a datum whose column/row falls outside the scales.
         if (current === null) {
-          let start: number;
+          let start: number | null;
           switch (event.key) {
             case 'ArrowLeft':
             case 'ArrowUp':
             case 'End':
-              start = n - 1;
+              start = g.lastCell();
               break;
             case 'ArrowRight':
             case 'ArrowDown':
             case 'Home':
-              start = 0;
+              start = g.firstCell();
               break;
             default:
               return;
           }
+          if (start === null) return;
           event.preventDefault();
           setActive(start);
           announce(start);

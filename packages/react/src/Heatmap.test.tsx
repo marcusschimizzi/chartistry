@@ -233,6 +233,40 @@ describe('Heatmap', () => {
     expect(getByTestId('active').textContent).toBe('0');
   });
 
+  it('keyboard start skips datums whose column is outside the grid', async () => {
+    // The first datum ('Z') is outside xDomain, so it never renders a cell and
+    // pointer hit-testing can't select it; keyboard start must skip it too.
+    const withStray = [
+      { col: 'Z', row: 'low', v: 1 }, // index 0, but 'Z' ∉ xDomain
+      { col: 'B', row: 'mid', v: 5 }, // index 1, the first real cell
+    ];
+    const { container, getByTestId } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={withStray}
+        x={(d) => d.col}
+        xScaleType="band"
+        xDomain={['A', 'B', 'C']}
+        yCategory={(d) => d.row}
+        yScaleType="band"
+        value={(d) => d.v}
+        renderer={svg()}
+        title="Z"
+        accessible
+      >
+        <Heatmap />
+        <ActiveCell />
+      </Chart>,
+    );
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    fireEvent.keyDown(app, { key: 'ArrowRight' }); // → first grid cell, not index 0
+    await flush();
+    expect(getByTestId('active').textContent).toBe('1');
+  });
+
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {
     const { container } = renderGrid(undefined, { accessible: true });
     await flush();
