@@ -536,10 +536,23 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   const active = useMemo<ActivePoint | null>(() => {
     if (activeIndex === null || activeIndex < 0 || activeIndex >= data.length) return null;
     const datum = data[activeIndex];
-    const points = interactiveSeries.map((s) => {
-      const value = s.y(datum, activeIndex);
-      return { key: s.key, color: s.color, value, position: valueScale(value) };
-    });
+    // Grid (heatmap) mode: the active "point" is the cell itself — its value at
+    // the cell center — so Tooltip/Crosshair/Highlight read the real value and
+    // anchor to the row, not a zeroed value-axis position.
+    const points =
+      rowScale && value && yCategory
+        ? [
+            {
+              key: 'value',
+              color: categoricalColors[0]!,
+              value: value(datum as D, activeIndex),
+              position: rowScale(yCategory(datum as D, activeIndex)) + rowScale.bandwidth() / 2,
+            },
+          ]
+        : interactiveSeries.map((s) => {
+            const v = s.y(datum, activeIndex);
+            return { key: s.key, color: s.color, value: v, position: valueScale(v) };
+          });
     return {
       index: activeIndex,
       datum,
@@ -548,7 +561,18 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       orientation,
       points,
     };
-  }, [activeIndex, data, interactiveSeries, positions, valueScale, x, orientation]);
+  }, [
+    activeIndex,
+    data,
+    interactiveSeries,
+    positions,
+    valueScale,
+    x,
+    orientation,
+    rowScale,
+    value,
+    yCategory,
+  ]);
 
   // Paint the current frame from the store, coalescing bursts into one repaint.
   const paint = useCallback(() => {
