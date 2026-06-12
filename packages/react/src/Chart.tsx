@@ -592,6 +592,16 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
           announce(start);
           return;
         }
+        // Home/End go to the first/last occupied cell (row-major), matching the
+        // initial-arrow behavior so they work on sparse grids too.
+        if (event.key === 'Home' || event.key === 'End') {
+          const target = event.key === 'Home' ? g.firstCell() : g.lastCell();
+          if (target === null) return;
+          event.preventDefault();
+          setActive(target);
+          announce(target);
+          return;
+        }
         const cols = g.colCats.length;
         const rows = g.rowCats.length;
         let { ci, ri } = g.cellOf(current);
@@ -607,14 +617,6 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
             break;
           case 'ArrowUp':
             ri = Math.max(0, ri - 1);
-            break;
-          case 'Home':
-            ci = 0;
-            ri = 0;
-            break;
-          case 'End':
-            ci = cols - 1;
-            ri = rows - 1;
             break;
           default:
             return;
