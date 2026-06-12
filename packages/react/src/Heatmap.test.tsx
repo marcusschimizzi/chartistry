@@ -4,6 +4,7 @@ import { act, cleanup, render } from '@testing-library/react';
 import { createSvgRenderer } from '@chartistry/renderer-svg';
 import { Chart } from './Chart';
 import { Heatmap } from './heatmap';
+import { XAxis } from './axes';
 
 const flush = async () => {
   await act(async () => {
@@ -40,6 +41,7 @@ describe('Heatmap', () => {
         accessible={false}
       >
         <Heatmap y={(d) => (d as Cell).row} value={(d) => (d as Cell).v} showValues />
+        <XAxis />
       </Chart>,
     );
     await flush();

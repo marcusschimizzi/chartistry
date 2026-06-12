@@ -16,7 +16,7 @@ const kids = (n: ReturnType<typeof heatmapMark>) => (n as GroupNode).children;
 
 describe('heatmapMark', () => {
   it('draws one rect per cell, colored by value and sized to the bands', () => {
-    const rects = kids(heatmapMark({ cells, xScale, yScale, color, padding: 0 })).filter(
+    const rects = kids(heatmapMark({ cells, columnScale: xScale, rowScale: yScale, color, padding: 0 })).filter(
       (c): c is RectNode => c.type === 'rect',
     );
     expect(rects).toHaveLength(2);
@@ -26,7 +26,7 @@ describe('heatmapMark', () => {
 
   it('labels cells with an auto-contrasting color', () => {
     const texts = kids(
-      heatmapMark({ cells, xScale, yScale, color, padding: 0, label: (v) => String(v) }),
+      heatmapMark({ cells, columnScale: xScale, rowScale: yScale, color, padding: 0, label: (v) => String(v) }),
     ).filter((c): c is TextNode => c.type === 'text');
     expect(texts.map((t) => t.text)).toEqual(['0', '10']);
     expect(texts[0]!.fill).toBe('#ffffff'); // black cell → white label
