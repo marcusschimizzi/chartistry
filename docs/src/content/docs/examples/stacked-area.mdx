@@ -1,0 +1,45 @@
+---
+title: Stacked & stream areas
+description: Stacked-area charts and streamgraphs from the same stacking machinery.
+---
+
+import StackedAreaExample from '../../../components/examples/StackedAreaExample.tsx';
+import StreamgraphExample from '../../../components/examples/StreamgraphExample.tsx';
+
+A **stacked area** chart stacks each series on top of the last, so the top edge reads as the
+total. Pass named `series` and set `stackY` on the `<Chart>` (as with stacked bars), then
+render `<StackedArea>`. Each series becomes a filled band between its stacked bounds.
+
+<StackedAreaExample client:load />
+
+```tsx
+import { Chart, StackedArea, XAxis, YAxis, Grid, Legend, Tooltip } from '@chartistry/react';
+
+<Chart width={640} height={320} data={data} x={(d) => d.t} xScaleType="time" stackY series={series}>
+  <Grid />
+  <YAxis />
+  <XAxis />
+  <StackedArea fillOpacity={0.85} />
+  <Legend />
+  <Tooltip />
+</Chart>;
+```
+
+## Streamgraph
+
+A **streamgraph** is the same stack, centered on a free baseline instead of zero. Switch the
+`<Chart>` to `stackY="silhouette"` — `<StackedArea>` reads that offset and the value axis
+becomes symmetric.
+
+<StreamgraphExample client:load />
+
+```tsx
+<Chart width={640} height={300} data={data} x={(d) => d.t} xScaleType="time" stackY="silhouette" series={series}>
+  <XAxis />
+  <StackedArea fillOpacity={0.9} />
+  <Legend />
+</Chart>;
+```
+
+Both share one stacking transform; only the offset differs. Toggle a series in the legend and
+the remaining bands restack and rescale.

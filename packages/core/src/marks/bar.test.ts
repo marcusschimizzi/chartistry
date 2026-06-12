@@ -143,4 +143,25 @@ describe('stackedBarMark', () => {
     const second = bars[1]!;
     expect(second.y + second.height).toBeCloseTo(first.y);
   });
+
+  it('centers the stack on the baseline for the silhouette offset', () => {
+    const node = stackedBarMark({
+      data,
+      category: (d) => d.label,
+      categoryScale: catScale,
+      valueScale: valScale,
+      series: [
+        { key: 'a', value: (d) => d.a },
+        { key: 'b', value: (d) => d.b },
+      ],
+      offset: 'silhouette',
+    }) as GroupNode;
+    const q1 = rects(node).slice(0, 2); // first category's two segments
+    const top = Math.min(...q1.map((b) => b.y));
+    const bottom = Math.max(...q1.map((b) => b.y + b.height));
+    // q1 total 6 → the stack is centered on the zero baseline (valScale(0)=100),
+    // and extends below it rather than sitting on it.
+    expect((top + bottom) / 2).toBeCloseTo(100);
+    expect(bottom).toBeGreaterThan(100);
+  });
 });

@@ -63,6 +63,8 @@ export interface ChartContextValue {
   valueScale: ContinuousScale;
   /** `horizontal` lays the value axis along x (categories on y). */
   orientation: 'vertical' | 'horizontal';
+  /** Stacking offset resolved from the Chart's `stackY` (for <StackedArea>). */
+  stackOffset: 'zero' | 'silhouette';
   xAccessor: (datum: unknown, index: number) => XValue;
   /** Default single-series y accessor (for <LineSeries>, <Bars>, ...). */
   yAccessor: (datum: unknown, index: number) => number;
