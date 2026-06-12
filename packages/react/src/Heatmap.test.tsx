@@ -255,6 +255,7 @@ describe('Heatmap', () => {
         value={(d) => d.v}
         renderer={svg()}
         title="Z"
+        accessible
       >
         <Heatmap showValues />
       </Chart>,
@@ -266,6 +267,10 @@ describe('Heatmap', () => {
     const drawn = container.querySelector('svg')?.textContent ?? '';
     expect(drawn).toContain('2');
     expect(drawn).not.toContain('999');
+    // The hidden a11y table lists only on-grid cells too (one row, no 999).
+    const table = container.querySelector('table');
+    expect(table!.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(table!.textContent).not.toContain('999');
   });
 
   it('keyboard start skips datums whose column is outside the grid', async () => {

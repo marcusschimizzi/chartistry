@@ -534,14 +534,21 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
 
   // a11y for a grid (heatmap): announce the column, row, and cell value.
   const gridA11y = useMemo<GridA11y | undefined>(() => {
-    if (yScaleType !== 'band' || !yCategory || !value) return undefined;
+    if (yScaleType !== 'band' || !yCategory || !value || !rowScale) return undefined;
+    // Mirror <Heatmap>: only cells on the grid (in both band domains) are drawn
+    // and focusable, so the hidden table lists exactly those — no off-grid rows.
+    const keyOf = (v: XValue) => (v instanceof Date ? v.getTime() : v);
+    const colKeys = new Set(categoryScale.domain.map(keyOf));
+    const rowKeys = new Set(rowScale.domain.map(keyOf));
     return {
       rowLabel: 'Row',
       rowAccessor: yCategory as (d: unknown, i: number) => XValue,
       formatRow: (v: XValue) => String(v),
       value: value as (d: unknown, i: number) => number,
+      isOnGrid: (d: unknown, i: number) =>
+        colKeys.has(keyOf(x(d as D, i))) && rowKeys.has(keyOf(yCategory(d as D, i))),
     };
-  }, [yScaleType, yCategory, value]);
+  }, [yScaleType, yCategory, value, rowScale, categoryScale, x]);
 
   const announce = useCallback(
     (index: number | null) => {

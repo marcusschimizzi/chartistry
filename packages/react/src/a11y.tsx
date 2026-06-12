@@ -25,6 +25,8 @@ export interface GridA11y {
   rowAccessor: (datum: unknown, index: number) => XValue;
   formatRow: (value: XValue) => string;
   value: (datum: unknown, index: number) => number;
+  /** Whether a datum's cell is actually on the grid (both categories in domain). */
+  isOnGrid: (datum: unknown, index: number) => boolean;
 }
 
 /**
@@ -85,13 +87,16 @@ export function ChartDataTable(props: ChartDataTableProps): ReactNode {
           </tr>
         </thead>
         <tbody>
-          {data.map((datum, i) => (
-            <tr key={i}>
-              <th scope="row">{formatX(xAccessor(datum, i))}</th>
-              <td>{grid.formatRow(grid.rowAccessor(datum, i))}</td>
-              <td>{grid.value(datum, i)}</td>
-            </tr>
-          ))}
+          {data.map((datum, i) => [datum, i] as const)
+            // Only cells actually on the grid — matching what's drawn and focusable.
+            .filter(([datum, i]) => grid.isOnGrid(datum, i))
+            .map(([datum, i]) => (
+              <tr key={i}>
+                <th scope="row">{formatX(xAccessor(datum, i))}</th>
+                <td>{grid.formatRow(grid.rowAccessor(datum, i))}</td>
+                <td>{grid.value(datum, i)}</td>
+              </tr>
+            ))}
         </tbody>
       </table>
     );
