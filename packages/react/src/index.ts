@@ -22,6 +22,7 @@ export {
 } from './bars';
 export { Bubbles, type BubblesProps } from './bubbles';
 export { StackedArea, type StackedAreaProps } from './stacked-area';
+export { Heatmap, type HeatmapProps } from './heatmap';
 export { SizeLegend, type SizeLegendProps } from './size-legend';
 export {
   ReferenceLine,
