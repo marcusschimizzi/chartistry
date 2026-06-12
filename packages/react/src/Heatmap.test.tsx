@@ -35,7 +35,15 @@ function ActiveCell() {
   return <div data-testid="active">{active ? String(active.index) : 'none'}</div>;
 }
 
-function renderGrid(extra?: ReactNode, opts?: { accessible?: boolean; bandPadding?: number }) {
+function YDomain() {
+  const { yScale } = useChartContext();
+  return <div data-testid="ydom">{JSON.stringify(yScale.domain)}</div>;
+}
+
+function renderGrid(
+  extra?: ReactNode,
+  opts?: { accessible?: boolean; bandPadding?: number; orientation?: 'vertical' | 'horizontal' },
+) {
   return render(
     <Chart
       width={200}
@@ -47,6 +55,7 @@ function renderGrid(extra?: ReactNode, opts?: { accessible?: boolean; bandPaddin
       yCategory={(d) => d.row}
       yScaleType="band"
       value={(d) => d.v}
+      orientation={opts?.orientation ?? 'vertical'}
       bandPadding={opts?.bandPadding ?? 0.2}
       renderer={svg()}
       title="H"
@@ -148,6 +157,46 @@ describe('Heatmap', () => {
     fireEvent.keyDown(app, { key: 'ArrowUp' }); // Tue/PM → Tue/AM
     await flush();
     expect(getByTestId('active').textContent).toBe('2');
+  });
+
+  it('keeps columns on x and rows on y even when orientation is horizontal', async () => {
+    // A grid is two category axes, so orientation must not flip it: columns
+    // still span the width (centers 50/150), rows the height (25/75).
+    const { container, getByTestId } = renderGrid(<ActiveCell />, {
+      bandPadding: 0,
+      accessible: true,
+      orientation: 'horizontal',
+    });
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    movePointer(app, 150, 75); // Tue, PM → datum index 3
+    await flush();
+    expect(getByTestId('active').textContent).toBe('3');
+  });
+
+  it('falls back to the value y-axis when yScaleType="band" but no yCategory', async () => {
+    // Band y without a row accessor isn't a grid; the y axis must stay the
+    // linear value scale (its domain numeric), not an empty band scale.
+    const { getByTestId } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={data}
+        x={(d) => d.col}
+        xScaleType="band"
+        y={(d) => d.v}
+        yScaleType="band"
+        renderer={svg()}
+        title="V"
+      >
+        <YDomain />
+      </Chart>,
+    );
+    await flush();
+    const domain = JSON.parse(getByTestId('ydom').textContent ?? '[]');
+    expect(domain).toHaveLength(2);
+    expect(domain.every((n: unknown) => typeof n === 'number')).toBe(true);
   });
 
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {

@@ -175,6 +175,10 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   );
   const { plot, size } = chart;
   const horizontal = orientation === 'horizontal';
+  // A grid (heatmap): two band axes. Columns are always x and rows always y, so
+  // orientation does not apply — there is no value axis to swap. Requires the
+  // row accessor; without it `yScaleType="band"` is inert (falls back to value).
+  const isGrid = yScaleType === 'band' && yCategory != null;
 
   // --- Category axis: linear positions, dates, or categorical bands. -------
   const categories = useMemo<XValue[]>(() => {
@@ -210,7 +214,10 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
 
   // The category axis runs along x for vertical charts, y for horizontal ones.
   const categoryScale = useMemo<Scale<XValue>>(() => {
-    const range: [number, number] = horizontal ? [0, plot.height] : [0, plot.width];
+    // In a grid the category axis is always x (columns span the width); only a
+    // plain horizontal chart puts it on the height.
+    const range: [number, number] =
+      horizontal && !isGrid ? [0, plot.height] : [0, plot.width];
     if (xScaleType === 'band') {
       // bandScale accepts string | number | Date and keys Dates by instant.
       return bandScale<XValue>({
@@ -236,6 +243,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     plot.width,
     plot.height,
     horizontal,
+    isGrid,
     bandPadding,
     linX0,
     linX1,
@@ -317,13 +325,15 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   }, [yScaleType, yCategory, data]);
 
   const rowScale = useMemo<Scale<XValue> | null>(() => {
-    if (yScaleType !== 'band') return null;
+    // Only a true grid (band y + a row accessor) replaces the value axis;
+    // `yScaleType="band"` alone, with no yCategory, leaves the value axis intact.
+    if (!isGrid) return null;
     return bandScale<XValue>({
       domain: rowCategories,
       range: [0, plot.height],
       paddingInner: bandPadding,
     }) as unknown as Scale<XValue>;
-  }, [yScaleType, rowCategories, plot.height, bandPadding]);
+  }, [isGrid, rowCategories, plot.height, bandPadding]);
 
   // Assign category/value to the actual x and y axes for this orientation. A
   // band y axis (rowScale) is a two-category grid: columns are always x and
