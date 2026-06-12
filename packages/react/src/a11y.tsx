@@ -19,10 +19,19 @@ interface A11ySeries {
   y: (datum: unknown, index: number) => number;
 }
 
+/** Grid (two-band-axis) a11y: a heatmap announces row + value, not a series. */
+export interface GridA11y {
+  rowLabel: string;
+  rowAccessor: (datum: unknown, index: number) => XValue;
+  formatRow: (value: XValue) => string;
+  value: (datum: unknown, index: number) => number;
+}
+
 /**
- * A one-line spoken description of a datum: its x value followed by each
- * series' value. Used for the `aria-live` announcement as the keyboard cursor
- * moves. The single implicit series ("value") is announced without its name.
+ * A one-line spoken description of a datum, for the `aria-live` announcement as
+ * the keyboard cursor moves. For a value chart it reads the x value then each
+ * series' value (the implicit "value" series unnamed); for a grid (heatmap) it
+ * reads the column, row, and cell value.
  */
 export function describePoint(
   data: readonly unknown[],
@@ -30,9 +39,15 @@ export function describePoint(
   xAccessor: (datum: unknown, index: number) => XValue,
   formatX: (value: XValue) => string,
   series: readonly A11ySeries[],
+  grid?: GridA11y,
 ): string {
   if (index < 0 || index >= data.length) return '';
   const datum = data[index];
+  if (grid) {
+    return `${formatX(xAccessor(datum, index))}, ${grid.formatRow(
+      grid.rowAccessor(datum, index),
+    )}: ${grid.value(datum, index)}`;
+  }
   const parts = series.map((s) => {
     const value = s.y(datum, index);
     return s.key === 'value' ? String(value) : `${s.key} ${value}`;
@@ -47,6 +62,7 @@ export interface ChartDataTableProps {
   xAccessor: (datum: unknown, index: number) => XValue;
   formatX: (value: XValue) => string;
   series: readonly A11ySeries[];
+  grid?: GridA11y;
 }
 
 /**
@@ -55,7 +71,31 @@ export interface ChartDataTableProps {
  * full dataset structurally, independent of which renderer drew the pixels.
  */
 export function ChartDataTable(props: ChartDataTableProps): ReactNode {
-  const { caption, xLabel, data, xAccessor, formatX, series } = props;
+  const { caption, xLabel, data, xAccessor, formatX, series, grid } = props;
+  // Grid (heatmap): one row per cell, with column, row, and value columns.
+  if (grid) {
+    return (
+      <table style={srOnly}>
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{xLabel}</th>
+            <th scope="col">{grid.rowLabel}</th>
+            <th scope="col">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((datum, i) => (
+            <tr key={i}>
+              <th scope="row">{formatX(xAccessor(datum, i))}</th>
+              <td>{grid.formatRow(grid.rowAccessor(datum, i))}</td>
+              <td>{grid.value(datum, i)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
   return (
     <table style={srOnly}>
       <caption>{caption}</caption>

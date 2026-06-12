@@ -12,17 +12,29 @@ A heatmap encodes a value as **color** across two categorical axes — here sale
 
 ## How it's built
 
-Use `<Heatmap>` inside a `<Chart xScaleType="band">`: the chart's **x** supplies the columns
-(so `<XAxis>` labels and hit-testing line up), and `<Heatmap>` takes `y` for the rows and
-`value` for the color. It builds a row band scale matched to the column scale's padding — so
-cells stay evenly spaced regardless of `bandPadding` — and draws the row labels.
+A heatmap is a first-class **two-category** chart: both axes are configured on the `<Chart>`.
+Set `xScaleType="band"` with `x` for the columns, `yScaleType="band"` with `yCategory` for the
+rows, and `value` for the cell value. Then add `<Heatmap>` for the cells and `<XAxis>`/`<YAxis>`
+for the labels. Because both axes are the chart's own, the cells align with the axes — and
+hover, keyboard focus, and the hidden data table all resolve the cell by **column and row**.
 
 ```tsx
-import { Chart, Heatmap, XAxis } from '@chartistry/react';
+import { Chart, Heatmap, XAxis, YAxis } from '@chartistry/react';
 
-<Chart width={620} height={280} data={data} x={(d) => d.month} xScaleType="band" margin={{ left: 64, bottom: 32 }}>
-  <Heatmap y={(d) => d.region} value={(d) => d.sales} showValues padding={2} radius={3} />
+<Chart
+  width={620}
+  height={280}
+  data={data}
+  x={(d) => d.month}
+  xScaleType="band"
+  yCategory={(d) => d.region}
+  yScaleType="band"
+  value={(d) => d.sales}
+  margin={{ left: 64, bottom: 32 }}
+>
+  <Heatmap showValues padding={2} radius={3} />
   <XAxis />
+  <YAxis />
 </Chart>;
 ```
 

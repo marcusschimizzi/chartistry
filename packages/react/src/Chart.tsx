@@ -42,7 +42,7 @@ import {
   type XValue,
 } from './context';
 import { MarkStore } from './mark-store';
-import { ChartDataTable, describePoint, srOnly } from './a11y';
+import { ChartDataTable, describePoint, srOnly, type GridA11y } from './a11y';
 
 export interface ChartProps<D> {
   width: number;
@@ -54,6 +54,16 @@ export interface ChartProps<D> {
   y?: (datum: D, index: number) => number;
   /** Horizontal scale kind. `band` for categories, `time` for date axes. */
   xScaleType?: 'linear' | 'band' | 'time';
+  /**
+   * Vertical scale kind. `linear` (default) is a value axis; `band` makes the y
+   * axis categorical (a second category axis), for grid charts like `<Heatmap>`.
+   * With `band`, provide `yCategory` for the row categories.
+   */
+  yScaleType?: 'linear' | 'band';
+  /** Row category accessor, when `yScaleType="band"`. */
+  yCategory?: (datum: D, index: number) => XValue;
+  /** Per-datum value, e.g. a heatmap cell's value (drives color and a11y). */
+  value?: (datum: D, index: number) => number;
   /** For a time axis, snap ticks and format labels in UTC instead of local time. */
   utc?: boolean;
   /** For a time axis, BCP-47 locale(s) for tick labels (uses `Intl`). */
@@ -121,6 +131,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     x = (_d, i) => i,
     y,
     xScaleType = 'linear',
+    yScaleType = 'linear',
+    yCategory,
+    value,
     utc = false,
     locale,
     orientation = 'vertical',
@@ -286,9 +299,38 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     return linearScale({ domain: [y0, y1], range, nice: niceY });
   }, [y0, y1, plot.width, plot.height, horizontal, niceY]);
 
-  // Assign category/value to the actual x and y axes for this orientation.
+  // Optional second category axis (yScaleType="band"): a band scale over the
+  // row categories, for grid charts like <Heatmap>. Replaces the value axis.
+  const rowCategories = useMemo<XValue[]>(() => {
+    if (yScaleType !== 'band' || !yCategory) return [];
+    const seen: XValue[] = [];
+    const known = new Set<string | number>();
+    data.forEach((d, i) => {
+      const v = yCategory(d, i);
+      const key = v instanceof Date ? v.getTime() : v;
+      if (!known.has(key)) {
+        known.add(key);
+        seen.push(v);
+      }
+    });
+    return seen;
+  }, [yScaleType, yCategory, data]);
+
+  const rowScale = useMemo<Scale<XValue> | null>(() => {
+    if (yScaleType !== 'band') return null;
+    return bandScale<XValue>({
+      domain: rowCategories,
+      range: [0, plot.height],
+      paddingInner: bandPadding,
+    }) as unknown as Scale<XValue>;
+  }, [yScaleType, rowCategories, plot.height, bandPadding]);
+
+  // Assign category/value to the actual x and y axes for this orientation. A
+  // band y axis (rowScale) takes the y slot directly.
   const xScale = horizontal ? (valueScale as unknown as Scale<XValue>) : categoryScale;
-  const yScale = horizontal ? categoryScale : (valueScale as unknown as Scale<XValue>);
+  const yScale = horizontal
+    ? categoryScale
+    : (rowScale ?? (valueScale as unknown as Scale<XValue>));
 
   // The series to interrogate on hover: the visible ones, or an implicit single
   // series wrapping the chart-level y accessor so single-series charts hover too.
@@ -333,6 +375,22 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
   const pointPositionsRef = useRef(pointPositions);
   pointPositionsRef.current = pointPositions;
 
+  // For grid charts (two band axes): the column/row band centers and a lookup
+  // from (column, row) to datum, so the pointer resolves a cell in 2D.
+  const grid = useMemo(() => {
+    if (!rowScale || !yCategory) return null;
+    const keyOf = (v: XValue) => (v instanceof Date ? v.getTime() : v);
+    const colCats = categoryScale.domain;
+    const rowCats = rowScale.domain;
+    const colCenters = colCats.map((c) => categoryScale(c) + categoryScale.bandwidth() / 2);
+    const rowCenters = rowCats.map((r) => rowScale(r) + rowScale.bandwidth() / 2);
+    const index = new Map<string, number>();
+    data.forEach((d, i) => index.set(`${keyOf(x(d, i))} ${keyOf(yCategory(d, i))}`, i));
+    return { colCats, rowCats, colCenters, rowCenters, index, keyOf };
+  }, [rowScale, categoryScale, data, x, yCategory]);
+  const gridRef = useRef(grid);
+  gridRef.current = grid;
+
   const setActive = useCallback((next: number | null) => {
     if (next === activeIndexRef.current) return;
     activeIndexRef.current = next;
@@ -365,6 +423,18 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         return;
       }
       notifyPointer({ x: localX, y: localY });
+      const g = gridRef.current;
+      if (g) {
+        // Grid (two band axes): resolve the cell by nearest column AND row.
+        const ci = nearestIndex(localX, g.colCenters);
+        const ri = nearestIndex(localY, g.rowCenters);
+        const cell =
+          ci < 0 || ri < 0
+            ? undefined
+            : g.index.get(`${g.keyOf(g.colCats[ci]!)} ${g.keyOf(g.rowCats[ri]!)}`);
+        setActive(cell ?? null);
+        return;
+      }
       // `point`: nearest datum in 2D (scatter/bubble). `category` (default):
       // nearest column along the category axis (x for vertical, y for horizontal).
       const index =
@@ -393,6 +463,17 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
     [categoryScale],
   );
 
+  // a11y for a grid (heatmap): announce the column, row, and cell value.
+  const gridA11y = useMemo<GridA11y | undefined>(() => {
+    if (yScaleType !== 'band' || !yCategory || !value) return undefined;
+    return {
+      rowLabel: 'Row',
+      rowAccessor: yCategory as (d: unknown, i: number) => XValue,
+      formatRow: (v: XValue) => String(v),
+      value: value as (d: unknown, i: number) => number,
+    };
+  }, [yScaleType, yCategory, value]);
+
   const announce = useCallback(
     (index: number | null) => {
       if (index === null) return setLiveText('');
@@ -403,10 +484,11 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
           x as (d: unknown, i: number) => XValue,
           formatX,
           interactiveSeries,
+          gridA11y,
         ),
       );
     },
-    [data, x, formatX, interactiveSeries],
+    [data, x, formatX, interactiveSeries, gridA11y],
   );
 
   const handleKeyDown = useCallback(
@@ -521,6 +603,8 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       stackOffset: stackY === 'silhouette' ? 'silhouette' : 'zero',
       xAccessor: x as (d: unknown, i: number) => XValue,
       yAccessor,
+      rowAccessor: yCategory as ((d: unknown, i: number) => XValue) | undefined,
+      value: value as ((d: unknown, i: number) => number) | undefined,
       series: visibleSeries,
       allSeries,
       toggleSeries,
@@ -542,6 +626,8 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       stackY,
       x,
       yAccessor,
+      yCategory,
+      value,
       visibleSeries,
       allSeries,
       toggleSeries,
@@ -598,6 +684,7 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
             xAccessor={x as (d: unknown, i: number) => XValue}
             formatX={formatX}
             series={interactiveSeries}
+            grid={gridA11y}
           />
         </>
       )}

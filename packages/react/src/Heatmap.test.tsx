@@ -1,16 +1,20 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
-import { act, cleanup, render } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { createSvgRenderer } from '@chartistry/renderer-svg';
 import { Chart } from './Chart';
 import { Heatmap } from './heatmap';
-import { XAxis } from './axes';
+import { XAxis, YAxis } from './axes';
+import { useChartContext } from './context';
 
 const flush = async () => {
   await act(async () => {
     await Promise.resolve();
   });
 };
+const movePointer = (el: HTMLElement, clientX: number, clientY: number) =>
+  fireEvent(el, new MouseEvent('pointermove', { clientX, clientY, bubbles: true }));
 afterEach(cleanup);
 const svg = () => createSvgRenderer({ transition: false });
 
@@ -26,41 +30,75 @@ const data: Cell[] = [
   { col: 'Tue', row: 'PM', v: 9 },
 ];
 
-describe('Heatmap', () => {
-  it('draws a cell per datum with row labels and optional values', async () => {
-    const { container } = render(
-      <Chart
-        width={200}
-        height={120}
-        margin={{ top: 0, right: 0, bottom: 0, left: 30 }}
-        data={data}
-        x={(d) => d.col}
-        xScaleType="band"
-        renderer={svg()}
-        title="H"
-        accessible={false}
-      >
-        <Heatmap y={(d) => (d as Cell).row} value={(d) => (d as Cell).v} showValues />
-        <XAxis />
-      </Chart>,
-    );
-    await flush();
+function ActiveCell() {
+  const { active } = useChartContext();
+  return <div data-testid="active">{active ? String(active.index) : 'none'}</div>;
+}
 
-    // One rect per cell (2 columns × 2 rows).
+function renderGrid(extra?: ReactNode, opts?: { accessible?: boolean; bandPadding?: number }) {
+  return render(
+    <Chart
+      width={200}
+      height={100}
+      margin={0}
+      data={data}
+      x={(d) => d.col}
+      xScaleType="band"
+      yCategory={(d) => d.row}
+      yScaleType="band"
+      value={(d) => d.v}
+      bandPadding={opts?.bandPadding ?? 0.2}
+      renderer={svg()}
+      title="H"
+      accessible={opts?.accessible ?? false}
+    >
+      <Heatmap showValues />
+      <XAxis />
+      <YAxis />
+      {extra}
+    </Chart>,
+  );
+}
+
+describe('Heatmap', () => {
+  it('draws a uniform cell per datum with axis labels and values', async () => {
+    const { container } = renderGrid();
+    await flush();
     const cells = Array.from(container.querySelectorAll('rect'));
     expect(cells).toHaveLength(4);
+    expect(new Set(cells.map((c) => c.getAttribute('width'))).size).toBe(1);
+    expect(new Set(cells.map((c) => c.getAttribute('height'))).size).toBe(1);
+    const text = container.textContent ?? '';
+    expect(text).toContain('AM'); // y-axis rows
+    expect(text).toContain('Mon'); // x-axis columns
+    expect(text).toContain('9'); // values
+  });
 
-    // Cells are uniform: same width and same height across the grid.
-    const widths = new Set(cells.map((c) => c.getAttribute('width')));
-    const heights = new Set(cells.map((c) => c.getAttribute('height')));
-    expect(widths.size).toBe(1);
-    expect(heights.size).toBe(1);
+  it('resolves the cell under the pointer in 2D (column AND row)', async () => {
+    const { container, getByTestId } = renderGrid(<ActiveCell />, {
+      bandPadding: 0,
+      accessible: true,
+    });
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    // Columns [Mon,Tue] over 200px → centers 50/150; rows [AM,PM] over 100 → 25/75.
+    movePointer(app, 150, 75); // Tue, PM → datum index 3
+    await flush();
+    expect(getByTestId('active').textContent).toBe('3');
+    movePointer(app, 50, 25); // Mon, AM → datum index 0
+    await flush();
+    expect(getByTestId('active').textContent).toBe('0');
+  });
 
-    const textContent = container.textContent ?? '';
-    expect(textContent).toContain('AM'); // row labels
-    expect(textContent).toContain('PM');
-    expect(textContent).toContain('Mon'); // column labels
-    expect(textContent).toContain('Tue');
-    expect(textContent).toContain('9'); // value labels
+  it('exposes a hidden cell table (column, row, value) for screen readers', async () => {
+    const { container } = renderGrid(undefined, { accessible: true });
+    await flush();
+    const table = container.querySelector('table');
+    expect(table).not.toBeNull();
+    const headers = Array.from(table!.querySelectorAll('thead th')).map((th) => th.textContent);
+    expect(headers).toEqual(['x', 'Row', 'Value']);
+    // Every cell appears as a row, e.g. Tue / PM / 9.
+    expect(table!.querySelectorAll('tbody tr')).toHaveLength(4);
+    expect(table!.textContent).toContain('9');
   });
 });

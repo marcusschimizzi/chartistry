@@ -68,6 +68,10 @@ export interface ChartContextValue {
   xAccessor: (datum: unknown, index: number) => XValue;
   /** Default single-series y accessor (for <LineSeries>, <Bars>, ...). */
   yAccessor: (datum: unknown, index: number) => number;
+  /** Row category accessor, when the y axis is a band (`<Heatmap>`). */
+  rowAccessor?: (datum: unknown, index: number) => XValue;
+  /** Per-datum value accessor (a heatmap cell's value), when provided. */
+  value?: (datum: unknown, index: number) => number;
   /** Visible multi-series (hidden ones removed), what marks should draw. */
   series: readonly ResolvedSeries[];
   /** Every series including hidden ones, with visibility flags, for <Legend>. */
