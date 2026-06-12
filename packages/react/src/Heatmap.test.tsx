@@ -6,6 +6,7 @@ import { createSvgRenderer } from '@chartistry/renderer-svg';
 import { Chart } from './Chart';
 import { Heatmap } from './heatmap';
 import { XAxis, YAxis } from './axes';
+import { Tooltip } from './interaction';
 import { useChartContext } from './context';
 
 const flush = async () => {
@@ -233,6 +234,40 @@ describe('Heatmap', () => {
     expect(getByTestId('active').textContent).toBe('0');
   });
 
+  it('omits off-grid cells from the drawing and the color domain', async () => {
+    // 'Z' is outside xDomain → it must not render a rect nor stretch the color
+    // range. With only Mon/AM=2 on the grid, that one cell is the whole extent.
+    const withStray = [
+      { col: 'Z', row: 'AM', v: 999 }, // off-grid
+      { col: 'Mon', row: 'AM', v: 2 }, // the only on-grid cell
+    ];
+    const { container } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={withStray}
+        x={(d) => d.col}
+        xScaleType="band"
+        xDomain={['Mon', 'Tue']}
+        yCategory={(d) => d.row}
+        yScaleType="band"
+        value={(d) => d.v}
+        renderer={svg()}
+        title="Z"
+      >
+        <Heatmap showValues />
+      </Chart>,
+    );
+    await flush();
+    const rects = Array.from(container.querySelectorAll('rect'));
+    expect(rects).toHaveLength(1); // off-grid 'Z' cell is not drawn
+    // The drawing (SVG) shows the on-grid value but not the off-grid one.
+    const drawn = container.querySelector('svg')?.textContent ?? '';
+    expect(drawn).toContain('2');
+    expect(drawn).not.toContain('999');
+  });
+
   it('keyboard start skips datums whose column is outside the grid', async () => {
     // The first datum ('Z') is outside xDomain, so it never renders a cell and
     // pointer hit-testing can't select it; keyboard start must skip it too.
@@ -294,6 +329,38 @@ describe('Heatmap', () => {
     expect(text).toContain('Mid'); // declared, data-less row still appears
     // Still one rect per datum (the empty row adds no cells).
     expect(container.querySelectorAll('rect')).toHaveLength(4);
+  });
+
+  it('default tooltip shows the column, row, and value of the hovered cell', async () => {
+    // No axes or cell labels, so the only on-screen text is the tooltip's.
+    const { container } = render(
+      <Chart
+        width={200}
+        height={100}
+        margin={0}
+        data={data}
+        x={(d) => d.col}
+        xScaleType="band"
+        yCategory={(d) => d.row}
+        yScaleType="band"
+        value={(d) => d.v}
+        bandPadding={0}
+        renderer={svg()}
+        title="T"
+        accessible
+      >
+        <Heatmap />
+        <Tooltip />
+      </Chart>,
+    );
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    movePointer(app, 150, 75); // Tue, PM → value 9
+    await flush();
+    const tip = container.textContent ?? '';
+    expect(tip).toContain('Tue'); // column header
+    expect(tip).toContain('PM'); // row label
+    expect(tip).toContain('9'); // cell value
   });
 
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {

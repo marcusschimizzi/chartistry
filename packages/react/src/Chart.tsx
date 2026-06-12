@@ -694,6 +694,9 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         ? [
             {
               key: 'value',
+              // Show the row label (the grid's second category) so the default
+              // tooltip reads column (header) + row + value, like the a11y line.
+              label: String(yCategory(datum as D, activeIndex)),
               color: categoricalColors[0]!,
               value: value(datum as D, activeIndex),
               position: rowScale(yCategory(datum as D, activeIndex)) + rowScale.bandwidth() / 2,

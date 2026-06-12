@@ -42,13 +42,22 @@ export function Heatmap(props: HeatmapProps): null {
   const node = useMemo(() => {
     // Needs the grid config from the Chart (yScaleType="band" + yCategory + value).
     if (!rowAccessor || !value) return group([], { key: 'heatmap' });
-    const values = data.map((d, i) => value(d, i));
-    const color = sequentialScale({ domain: colorDomain ?? extent(values), range: colors });
-    const cells = data.map((d, i) => ({
-      x: xAccessor(d, i),
-      y: rowAccessor(d, i),
-      value: values[i]!,
-    }));
+    // Only cells whose column and row are on the grid (in the band domains) are
+    // drawn — a datum outside xDomain/yCategoryDomain has no band position, so
+    // it would render at a non-finite spot and skew the auto color range.
+    const keyOf = (v: unknown) => (v instanceof Date ? v.getTime() : v);
+    const colKeys = new Set(xScale.domain.map(keyOf));
+    const rowKeys = new Set(yScale.domain.map(keyOf));
+    const cells = data.flatMap((d, i) => {
+      const x = xAccessor(d, i);
+      const y = rowAccessor(d, i);
+      if (!colKeys.has(keyOf(x)) || !rowKeys.has(keyOf(y))) return [];
+      return [{ x, y, value: value(d, i) }];
+    });
+    const color = sequentialScale({
+      domain: colorDomain ?? extent(cells.map((c) => c.value)),
+      range: colors,
+    });
     return heatmapMark({
       cells,
       xScale,

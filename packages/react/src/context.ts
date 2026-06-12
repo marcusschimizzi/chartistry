@@ -32,6 +32,8 @@ export interface ActiveSeriesPoint {
   value: number;
   /** Plot-local pixel position along the value axis (y for vertical, x for horizontal). */
   position: number;
+  /** Display name for this point, when it differs from `key` (e.g. a grid row). */
+  label?: string;
 }
 
 /** The datum currently under the pointer, resolved across every series. */

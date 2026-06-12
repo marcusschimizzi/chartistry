@@ -205,7 +205,7 @@ function DefaultTooltip({ active }: { active: ActivePoint }): ReactNode {
               display: 'inline-block',
             }}
           />
-          <span style={{ opacity: 0.85, textTransform: 'capitalize' }}>{p.key}</span>
+          <span style={{ opacity: 0.85, textTransform: 'capitalize' }}>{p.label ?? p.key}</span>
           <span style={{ marginLeft: 'auto', fontWeight: 600 }}>{formatValue(p.value)}</span>
         </div>
       ))}
