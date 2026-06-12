@@ -24,6 +24,14 @@ describe('sequentialScale', () => {
     expect(s(2)).toBe('#ffffff');
     expect(s(-1)).toBe('#000000');
   });
+
+  it('returns the unknown color for non-finite values, never throwing', () => {
+    const s = sequentialScale({ domain: [0, 1], range: ['#000000', '#ffffff'] });
+    expect(s(NaN)).toBe('#e5e7eb'); // default neutral
+    expect(s(Infinity)).toBe('#e5e7eb');
+    const custom = sequentialScale({ domain: [0, 1], range: ['#000', '#fff'], unknown: '#ff00ff' });
+    expect(custom(Number.NaN)).toBe('#ff00ff');
+  });
 });
 
 describe('contrastColor', () => {

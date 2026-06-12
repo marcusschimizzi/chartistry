@@ -16,6 +16,8 @@ export interface SequentialScaleOptions {
   range: readonly string[];
   /** Clamp out-of-domain inputs to the end colors. Defaults to true. */
   clamp?: boolean;
+  /** Color for non-finite (missing) values. Defaults to a neutral grey. */
+  unknown?: string;
 }
 
 /** A light→deep blue sequential ramp — the default heatmap palette. */
@@ -46,9 +48,11 @@ export function sequentialScale(options: SequentialScaleOptions): SequentialScal
   const [d0, d1] = options.domain;
   const stops = options.range.map(parseHex);
   const clamp = options.clamp ?? true;
+  const unknown = options.unknown ?? '#e5e7eb';
   const span = d1 - d0;
 
   const scale = ((value: number): string => {
+    if (!Number.isFinite(value)) return unknown; // missing data — never crash
     if (stops.length === 0) return '#000000';
     if (stops.length === 1) return toHex(stops[0]!);
     let t = span === 0 ? 0 : (value - d0) / span;
