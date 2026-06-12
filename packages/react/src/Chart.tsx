@@ -399,7 +399,17 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       if (!rows) index.set(col, (rows = new Map()));
       rows.set(keyOf(yCategory(d, i)), i);
     });
-    return { colCats, rowCats, colCenters, rowCenters, index, keyOf };
+    const colKeys = colCats.map(keyOf);
+    const rowKeys = rowCats.map(keyOf);
+    // Locate a datum's cell within the grid, for keyboard navigation.
+    const cellOf = (i: number) => ({
+      ci: colKeys.indexOf(keyOf(x(data[i] as D, i))),
+      ri: rowKeys.indexOf(keyOf(yCategory(data[i] as D, i))),
+    });
+    // The datum at a column/row cell, or null when the grid is sparse there.
+    const at = (ci: number, ri: number) =>
+      index.get(colKeys[ci]!)?.get(rowKeys[ri]!) ?? null;
+    return { colCats, rowCats, colCenters, rowCenters, index, keyOf, cellOf, at };
   }, [rowScale, categoryScale, data, x, yCategory]);
   const gridRef = useRef(grid);
   gridRef.current = grid;
@@ -509,6 +519,55 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
       const n = data.length;
       if (n === 0) return;
       const current = activeIndexRef.current;
+      if (event.key === 'Escape') {
+        setActive(null);
+        notifyPointer(null);
+        announce(null);
+        return;
+      }
+      // Grid (heatmap): arrows move spatially by column/row, not by flat index,
+      // so focus follows the visible grid. Lands only on populated cells.
+      const g = gridRef.current;
+      if (g) {
+        const cols = g.colCats.length;
+        const rows = g.rowCats.length;
+        const cur = current === null ? { ci: -1, ri: -1 } : g.cellOf(current);
+        let { ci, ri } = cur;
+        switch (event.key) {
+          case 'ArrowRight':
+            ci = ci < 0 ? 0 : Math.min(cols - 1, ci + 1);
+            if (ri < 0) ri = 0;
+            break;
+          case 'ArrowLeft':
+            ci = ci < 0 ? cols - 1 : Math.max(0, ci - 1);
+            if (ri < 0) ri = 0;
+            break;
+          case 'ArrowDown':
+            ri = ri < 0 ? 0 : Math.min(rows - 1, ri + 1);
+            if (ci < 0) ci = 0;
+            break;
+          case 'ArrowUp':
+            ri = ri < 0 ? rows - 1 : Math.max(0, ri - 1);
+            if (ci < 0) ci = 0;
+            break;
+          case 'Home':
+            ci = 0;
+            ri = 0;
+            break;
+          case 'End':
+            ci = cols - 1;
+            ri = rows - 1;
+            break;
+          default:
+            return;
+        }
+        event.preventDefault();
+        const cell = g.at(ci, ri);
+        if (cell === null) return; // don't step onto an empty cell
+        setActive(cell);
+        announce(cell);
+        return;
+      }
       let next: number | null = current;
       switch (event.key) {
         case 'ArrowRight':
@@ -523,11 +582,6 @@ export function Chart<D>(props: ChartProps<D>): ReactNode {
         case 'End':
           next = n - 1;
           break;
-        case 'Escape':
-          setActive(null);
-          notifyPointer(null);
-          announce(null);
-          return;
         default:
           return;
       }

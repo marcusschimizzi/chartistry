@@ -128,6 +128,28 @@ describe('Heatmap', () => {
     expect(getByTestId('active').textContent).toBe('1');
   });
 
+  it('moves keyboard focus spatially by column and row', async () => {
+    const { container, getByTestId } = renderGrid(<ActiveCell />, {
+      bandPadding: 0,
+      accessible: true,
+    });
+    await flush();
+    const app = container.querySelector('[role="application"]') as HTMLElement;
+    // data = Mon/AM(0), Mon/PM(1), Tue/AM(2), Tue/PM(3).
+    fireEvent.keyDown(app, { key: 'ArrowRight' }); // from none → first cell Mon/AM
+    await flush();
+    expect(getByTestId('active').textContent).toBe('0');
+    fireEvent.keyDown(app, { key: 'ArrowDown' }); // Mon/AM → Mon/PM
+    await flush();
+    expect(getByTestId('active').textContent).toBe('1');
+    fireEvent.keyDown(app, { key: 'ArrowRight' }); // Mon/PM → Tue/PM
+    await flush();
+    expect(getByTestId('active').textContent).toBe('3');
+    fireEvent.keyDown(app, { key: 'ArrowUp' }); // Tue/PM → Tue/AM
+    await flush();
+    expect(getByTestId('active').textContent).toBe('2');
+  });
+
   it('exposes a hidden cell table (column, row, value) for screen readers', async () => {
     const { container } = renderGrid(undefined, { accessible: true });
     await flush();
