@@ -9,3 +9,4 @@ export * from './crosshair';
 export * from './size-legend';
 export * from './reference';
 export * from './stacked-area';
+export * from './heatmap';

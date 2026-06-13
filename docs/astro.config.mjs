@@ -103,6 +103,7 @@ export default defineConfig({
             { label: 'Stacked & stream areas', slug: 'examples/stacked-area' },
             { label: 'Bubble & scatter', slug: 'examples/bubble-chart' },
             { label: 'Pie & donut', slug: 'examples/pie-and-donut' },
+            { label: 'Heatmap', slug: 'examples/heatmap' },
             { label: 'Annotations', slug: 'examples/annotations' },
             { label: 'Canvas renderer', slug: 'examples/canvas-renderer' },
           ],

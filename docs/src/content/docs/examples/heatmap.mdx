@@ -1,0 +1,49 @@
+---
+title: Heatmap
+description: A grid of cells over two category axes, colored by value.
+---
+
+import HeatmapExample from '../../../components/examples/HeatmapExample.tsx';
+
+A heatmap encodes a value as **color** across two categorical axes — here sales by region
+(rows) and month (columns).
+
+<HeatmapExample client:load />
+
+## How it's built
+
+A heatmap is a first-class **two-category** chart: both axes are configured on the `<Chart>`.
+Set `xScaleType="band"` with `x` for the columns, `yScaleType="band"` with `yCategory` for the
+rows, and `value` for the cell value. Then add `<Heatmap>` for the cells and `<XAxis>`/`<YAxis>`
+for the labels. Because both axes are the chart's own, the cells align with the axes — and
+hover, keyboard focus, and the hidden data table all resolve the cell by **column and row**.
+
+```tsx
+import { Chart, Heatmap, XAxis, YAxis } from '@chartistry/react';
+
+<Chart
+  width={620}
+  height={280}
+  data={data}
+  x={(d) => d.month}
+  xScaleType="band"
+  yCategory={(d) => d.region}
+  yScaleType="band"
+  value={(d) => d.sales}
+  margin={{ left: 64, bottom: 32 }}
+>
+  <Heatmap showValues padding={2} radius={3} />
+  <XAxis />
+  <YAxis />
+</Chart>;
+```
+
+`value` drives a **sequential** color scale (a light→dark blue ramp by default; pass `colors`
+to change it, `colorDomain` to fix the range). `showValues` prints each cell's value in an
+auto-contrasting color so it stays legible on light and dark cells.
+
+By default the columns and rows come from the data in first-seen order. To pin the order — or
+to declare rows/columns that have no data yet, so the grid keeps a fixed shape — pass
+`xDomain` for the columns and `yCategoryDomain` for the rows.
+
+A standalone color-scale legend is a natural companion — coming next.
